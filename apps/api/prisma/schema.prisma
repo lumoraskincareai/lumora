@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FaceScan {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  imageUrl    String
+  imageWidth  Int?     // orientation-corrected pixel dimensions of the stored
+  imageHeight Int?     // photo, needed to place `detections` boxes on screen
+  concerns    Json     // { source: "ai" | "heuristic", items: ConcernScore[], detections: Detection[] }
+  webSuggestions Json? // cached "From the web" product suggestions for this scan: { budget, generatedAt, grounded, sources, concerns }
+  createdAt   DateTime @default(now())
+}
+
+model SkinProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  skinType      String
+  concerns      String[]
+  sensitivities String[]
+  goals         String[]
+  climateZone   String?
+  monthlyBudget Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  brand       String
+  category    String
+  ingredients String[]
+  price       Float
+  imageUrl    String?
+  barcode     String?  @unique  // NEW
+  isPromoted  Boolean  @default(false) // shown first (labelled "Featured") in scan suggestions
+  createdAt   DateTime @default(now())
+  reviews     Review[]
+  routineSteps RoutineStep[]
+  recommendations Recommendation[]
+  userProducts UserProduct[]
+}
+
+model Review {
+  id                 String   @id @default(uuid())
+  productId          String
+  userId             String
+  rating             Int
+  title              String?
+  comment            String
+  skinType           String?
+  concerns           String[]
+  isAnonymous        Boolean  @default(false)
+  isVerifiedPurchase Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  product            Product  @relation(fields: [productId], references: [id])
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model CheckIn {
+  id        String   @id @default(uuid())
+  userId    String
+  mood      Int
+  note      String?
+  images    String[] @default([])
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  name            String
+  passwordHash    String?
+  googleId        String?          @unique
+  avatarUrl       String?
+  resetCodeHash       String?
+  resetCodeExpiresAt  DateTime?
+  createdAt       DateTime         @default(now())
+  pushToken       String?
+  isPremium       Boolean          @default(false)
+  checkIns        CheckIn[]
+  recommendations Recommendation[]
+  reviews         Review[]
+  routines        Routine[]
+  userProducts UserProduct[]
+  skinProfile     SkinProfile?
+  posts Post[]
+  postLikes PostLike[]
+  comments Comment[]
+  bookmarks Bookmark[]
+  reports   Report[]
+  bountyCompletions BountyCompletion[]
+  faceScans FaceScan[]
+}
+
+model Bounty {
+  id           String             @id @default(uuid())
+  key          String?            @unique // stable identifier used to auto-complete from app actions
+  title        String
+  description  String
+  rewardPoints Int                @default(0)
+  active       Boolean            @default(true)
+  expiresAt    DateTime?
+  createdAt    DateTime           @default(now())
+  completions  BountyCompletion[]
+}
+
+model BountyCompletion {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  bountyId  String
+  bounty    Bounty   @relation(fields: [bountyId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, bountyId])
+}
+
+model Ingredient {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  goodFor     String[]
+  category    String
+}
+
+model Recommendation {
+  id              String   @id @default(uuid())
+  userId          String
+  productId       String
+  reason          String
+  contextSnapshot Json
+  helpful         Boolean?
+  createdAt       DateTime @default(now())
+  product         Product  @relation(fields: [productId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Routine {
+  id        String        @id @default(uuid())
+  userId    String
+  name      String
+  timeOfDay String
+  isShared  Boolean       @default(false) // opted in to the community Shared Routines list
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  steps     RoutineStep[]
+}
+
+model RoutineStep {
+  id             String  @id @default(uuid())
+  routineId      String
+  productId      String
+  stepOrder      Int
+  completedToday Boolean @default(false)
+  product        Product @relation(fields: [productId], references: [id])
+  routine        Routine @relation(fields: [routineId], references: [id])
+}
+
+model UserProduct {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  productId      String?
+  product        Product?  @relation(fields: [productId], references: [id])
+  customName     String?   // for products not in the catalog
+  customBrand    String?
+  openedAt       DateTime?
+  expiresAt      DateTime?
+  quantityTotal  Float?    // e.g. 50 (ml/g)
+  quantityUnit   String?   // "ml" | "g" | "uses"
+  quantityLeft   Float?    // current estimated remaining amount
+  isFinished     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+}
+
+
+model PostLike {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reason    String?
+  createdAt DateTime @default(now())
+
+  // One report per user per post — repeated taps update nothing, they
+  // just confirm "already reported" instead of spamming duplicate rows.
+  @@unique([userId, postId])
+}
+
+
+model Post {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  title     String?
+  content   String
+  category  String     @default("General") // "General" | "Products" | "My Story" | "Study Hub" | "Challenges"
+  tags      String[]   @default([])
+  postLikes PostLike[]
+  comments  Comment[]
+  bookmarks Bookmark[]
+  reports   Report[]
+  createdAt DateTime   @default(now())
+  images    String[]   @default([])
+}
+
+model Comment {
+  id              String    @id @default(uuid())
+  postId          String
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  content         String
+  isAnonymous     Boolean   @default(false)
+  parentCommentId String?
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
+  createdAt       DateTime  @default(now())
+}
