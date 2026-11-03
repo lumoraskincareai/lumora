@@ -23,7 +23,7 @@ A skincare companion app built with **Expo (SDK 54)** and **expo-router**. Lumor
 | **Admin** | Product catalog management with Open Beauty Facts lookup (barcode or search). Visible only to emails in the backend's `ADMIN_EMAILS` |
 | **Push** | Expo push tokens registered with the backend on login; nightly streak reminder from the backend |
 
-Project status — what's done and what's still open — is tracked in [../STATUS.md](../STATUS.md).
+Project status — what's done and what's still open — is tracked in [../../STATUS.md](../../STATUS.md).
 
 ## Tech stack
 
@@ -127,7 +127,7 @@ eas update --channel preview
 
 ## Documentation
 
-- [../STATUS.md](../STATUS.md) — completed features and open gaps across app, backend and website
+- [../../STATUS.md](../../STATUS.md) — completed features and open gaps across app, backend and website
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — routing, data layer, state, theming
 - [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md) — OAuth clients, signing keys, troubleshooting
 - [CONTRIBUTING.md](CONTRIBUTING.md) — workflow and conventions

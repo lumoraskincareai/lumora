@@ -3,48 +3,68 @@
 A skincare companion: a React Native app, the REST API behind it, and a static download site.
 
 ```
-lumora/                this folder: the lumora-workspace repo
-├── lumora-app/        Expo SDK 54 app (its own git repo)
-├── lumora-backend/    Express 5 + Prisma API (its own git repo)
-├── lumora-website/    static landing, download and privacy pages
-├── STATUS.md          what's done and what's open, across all three
-├── project.md       the project submission write-up
-├── AGENTS.md          rules for AI coding agents (CLAUDE.md points here)
-└── .claude/agents/    workspace-level Claude Code subagents
+apps/
+├── mobile/     Expo SDK 54 Android app
+├── api/        Express 5 + Prisma REST API
+└── website/    static landing, download and privacy pages (getlumora.site)
 ```
 
-| Repository | Holds |
-| --- | --- |
-| [lumora-workspace](https://github.com/anshikagupta5451/lumora-workspace) | This folder: workspace docs, cross-project AI rules and agents, the website |
-| [lumora-app](https://github.com/anshikagupta5451/lumora-app) | The Android app |
-| [lumora-backend](https://github.com/anshikagupta5451/lumora-backend) | The REST API |
+## Setup
 
-To work on everything locally, clone the workspace, then clone the app and backend inside it (they are git-ignored here).
+You need 64-bit Node 22 (`.nvmrc`).
+
+```bash
+npm ci
+cp apps/api/.env.example apps/api/.env        # then fill it in
+cp apps/mobile/.env.example apps/mobile/.env  # then fill it in
+```
+
+Use a development database for local work, not the production one.
+
+## Commands
+
+Run these from the repo root.
+
+| Command | Does |
+| --- | --- |
+| `npm run dev:api` | API on port 4000, restarting on changes |
+| `npm run android` | Build and run the Android app (needs Android Studio and JDK 17) |
+| `npm run start:mobile` | Metro dev server for an installed dev build |
+| `npm run verify` | Type check, API tests, lint and guard tests |
+
+Run EAS commands from `apps/mobile` (`eas build --profile preview --platform android`). Add a dependency from inside its app: `npx expo install <pkg>` for mobile, `npm install <pkg>` for the API.
+
+## Deploying
+
+| App | Where | Settings |
+| --- | --- | --- |
+| API | Render | Root directory: empty (the repo root). Build: `npm ci -w lumora-backend`. Start: `npm start -w lumora-backend`. Set `TZ=Asia/Kolkata` and the variables in `apps/api/.env.example` |
+| Website | Netlify | Drag `apps/website` into the site's **Deploys** page, or connect the repo with publish directory `apps/website` and no build command |
+| Mobile | EAS | `eas build` and `eas update` from `apps/mobile` |
+
+Run database migrations as a deliberate step (`npx prisma migrate deploy` in `apps/api`), before deploying code that needs them.
 
 ## Start here
 
 | I want to… | Read |
 | --- | --- |
-| Judge the project submission | [project.md](project.md) |
-| Run the app | [lumora-app/README.md](lumora-app/README.md) |
-| Run the API | [lumora-backend/README.md](lumora-backend/README.md) |
-| Publish the website | [lumora-website/README.md](lumora-website/README.md) |
-| Understand the app's code | [lumora-app/docs/ARCHITECTURE.md](lumora-app/docs/ARCHITECTURE.md) |
+| Run the app | [apps/mobile/README.md](apps/mobile/README.md) |
+| Run the API | [apps/api/README.md](apps/api/README.md) |
+| Publish the website | [apps/website/README.md](apps/website/README.md) |
+| Understand the app's code | [apps/mobile/docs/ARCHITECTURE.md](apps/mobile/docs/ARCHITECTURE.md) |
 | See project status | [STATUS.md](STATUS.md) |
-| Contribute | [lumora-app/CONTRIBUTING.md](lumora-app/CONTRIBUTING.md) |
-
-Local development: start the backend (`npm run dev` on port 4000), then set `EXPO_PUBLIC_API_URL` in `lumora-app/.env` to your machine's LAN IP and run `npm run android`.
+| Contribute | [apps/mobile/CONTRIBUTING.md](apps/mobile/CONTRIBUTING.md) |
+| Read the project submission | [project.md](project.md) |
 
 ## Working with AI agents
 
-Instructions are layered. An agent reads the root [AGENTS.md](AGENTS.md) for cross-project rules, then the AGENTS.md of the project it is changing. Each `CLAUDE.md` contains only `@AGENTS.md`, so Claude Code and other agents follow the same rules.
+Open Claude Code at the repo root. Instructions are layered: an agent reads the root [AGENTS.md](AGENTS.md) for cross-app rules, then the AGENTS.md of the app it is changing. Each `CLAUDE.md` contains only `@AGENTS.md`, so Claude Code and other agents follow the same rules.
 
-Subagents (in Claude Code, ask for one by name, e.g. "use the app-reviewer agent"):
+| Tool | Use it for |
+| --- | --- |
+| `/verify` | running every check and reporting the results |
+| `api-contract-checker` | checking that app API calls match API routes after an endpoint change |
+| `app-reviewer` | reviewing app changes against the house rules (Text import, theming, apiFetch, …) |
+| `backend-reviewer` | reviewing route, Prisma and migration changes |
 
-| Agent | Where | Use it for |
-| --- | --- | --- |
-| `api-contract-checker` | `.claude/agents/` | checking that app API calls match backend routes after an endpoint change |
-| `app-reviewer` | `lumora-app/.claude/agents/` | reviewing app changes against the house rules (Text import, theming, apiFetch, …) |
-| `backend-reviewer` | `lumora-backend/.claude/agents/` | reviewing route, Prisma and migration changes |
-
-Recommended loop for a feature: tell the agent which project it touches → let it make the change → run the project's checks (see AGENTS.md §5) → run the matching reviewer agent → update STATUS.md if a checklist item changed.
+Recommended loop for a feature: tell the agent which app it touches → let it make the change → `/verify` → run the matching reviewer agent → update STATUS.md if a checklist item changed.

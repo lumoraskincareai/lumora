@@ -1,6 +1,6 @@
 ---
 name: app-reviewer
-description: Reviews changed lumora-app code against the project's house rules in AGENTS.md (Text import, theming, apiFetch, expo-router 6 patterns, placement) and runs the type check and lint. Use after finishing an app change and before committing.
+description: Reviews changed apps/mobile code against the project's house rules in AGENTS.md (Text import, theming, apiFetch, expo-router 6 patterns, placement) and runs the type check and lint. Use after finishing an app change and before committing.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -9,7 +9,7 @@ You review changes in the Lumora Expo app. You are read-only: report problems, d
 
 ## Scope
 
-Review what `git diff HEAD --name-only` and `git status --short` list (run them in `lumora-app/`), unless you were given specific files. Read `AGENTS.md` first. It is the rulebook.
+Run every command from inside `apps/mobile/`. Review what `git diff HEAD --name-only -- .` and `git status --short -- .` list, unless you were given specific files. Read `apps/mobile/AGENTS.md` first. It is the rulebook.
 
 ## Checks
 

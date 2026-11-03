@@ -6,7 +6,7 @@ Instructions for AI coding agents working in this repo. Humans: see [README.md](
 
 Read the exact versioned docs at **https://docs.expo.dev/versions/v54.0.0/** before writing any code.
 
-This project is on **Expo SDK 54 / React Native 0.81 / React 19 / expo-router 6**. Pre-SDK-50 patterns are wrong here and training data is full of them. Specifically:
+This project is on **Expo SDK 54 / React Native 0.81 / React 19 / expo-router 6**, developed on 64-bit Node 22 (`.nvmrc` at the repo root). Pre-SDK-50 patterns are wrong here and training data is full of them. Specifically:
 
 - Routing is **expo-router 6**, not React Navigation directly. Use `<Stack>`, `<Tabs>`, `useRouter()`, `useLocalSearchParams()`, `<Redirect>`, `<Link>`.
 - The **new architecture** and the **React Compiler** are enabled (`app.json` → `experiments`). Do not add manual `useMemo`/`useCallback` purely for render performance; do not reach for legacy bridge APIs.
@@ -21,8 +21,8 @@ This project is on **Expo SDK 54 / React Native 0.81 / React 19 / expo-router 6*
 | What the app does, how to run it | [README.md](README.md) |
 | Routing, data flow, state, theming | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Branching, commits, checks | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Backend contract, AI-feature rules, secrets | [../AGENTS.md](../AGENTS.md) |
-| Review before committing | the `app-reviewer` subagent in [.claude/agents/](.claude/agents/app-reviewer.md) |
+| Backend contract, AI-feature rules, secrets | [../../AGENTS.md](../../AGENTS.md) |
+| Review before committing | the `app-reviewer` subagent in [.claude/agents/](../../.claude/agents/app-reviewer.md) |
 
 ## 3. Rules that are easy to get wrong
 
@@ -66,7 +66,7 @@ Screens are default exports named `XxxScreen`.
 
 ## 5. Do not
 
-- Add a dependency without being asked — especially a navigation, state, or data-fetching library. The stack is settled.
+- Add a dependency without being asked (`npx expo install <pkg>`, run from this folder; the lockfile is at the repo root) — especially a navigation, state, or data-fetching library. The stack is settled.
 - Edit `.env`, `google-services.json`, `app.json` credentials, or anything under `android/` unless that is the task. `android/` is gitignored and generated.
 - Touch `dist/`, `.expo/`, or `node_modules/`.
 - Re-add `Text.defaultProps` / `TextInput.defaultProps` style hacks. React 19 ignores `defaultProps` on function components and the JSX runtime here never reads them — this was already tried and removed. See [Typography](docs/ARCHITECTURE.md#6-typography).

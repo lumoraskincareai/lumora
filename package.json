@@ -1,0 +1,24 @@
+{
+  "name": "lumora",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/mobile",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w lumora-backend",
+    "start:mobile": "npm start -w lumora-app",
+    "android": "npm run android -w lumora-app",
+    "typecheck": "npm run typecheck -w lumora-app -w lumora-backend",
+    "test": "npm test -w lumora-backend",
+    "lint": "npm run lint -w lumora-app",
+    "test:guard": "node .claude/hooks/guard.test.cjs",
+    "verify": "npm run typecheck && npm test && npm run lint && npm run test:guard"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}

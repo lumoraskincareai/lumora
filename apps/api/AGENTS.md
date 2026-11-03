@@ -1,15 +1,15 @@
 # AGENTS.md
 
-Instructions for AI coding agents working in the Lumora backend. Humans: see [README.md](README.md). Cross-project rules, including how this API pairs with the app, are in [../AGENTS.md](../AGENTS.md).
+Instructions for AI coding agents working in the Lumora backend. Humans: see [README.md](README.md). Cross-project rules, including how this API pairs with the app, are in [../../AGENTS.md](../../AGENTS.md).
 
 ## 1. Stack
 
-**Express 5 + Prisma 6 + PostgreSQL (Neon)**, TypeScript run directly with `tsx` (`npm run dev`). CommonJS modules, `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. There is no build step. Tests use Node's built-in `node:test` (`npm test`, files in `test/`); don't add Jest or Vitest.
+**Express 5 + Prisma 6 + PostgreSQL (Neon)**, on 64-bit Node 22 (`.nvmrc` at the repo root), TypeScript run directly with `tsx` (`npm run dev`). CommonJS modules, `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. There is no build step. Tests use Node's built-in `node:test` (`npm test`, files in `test/`); don't add Jest or Vitest.
 
 - Express **5**: async handlers that throw or reject are forwarded to the error handler automatically. Don't add `express-async-handler` or wrap every route in try/catch just for that.
 - Prisma **6**: use `@prisma/client` through the shared instance in `src/lib/prisma.ts`. Never `new PrismaClient()` anywhere else. The `prisma-upgrade-v7` skill exists for a future upgrade. Don't upgrade as a side effect.
 
-Prisma skills live in `.agents/skills/` (also reachable as `.claude/skills/`). Load `prisma-cli`, `prisma-client-api` or `prisma-database-setup` before non-trivial schema, query or migration work.
+Prisma skills live in `.agents/skills/`, with thin wrappers in the repo root's `.claude/skills/` so Claude Code finds them on every OS. Load `prisma-cli`, `prisma-client-api` or `prisma-database-setup` before non-trivial schema, query or migration work.
 
 ## 2. Layout
 
@@ -59,7 +59,7 @@ Gemini is used only in `src/lib/geminiVision.ts` (face scan), `src/lib/webProduc
 
 - Edit `.env` or print its values.
 - Add a dependency, framework, validation library or ORM pattern unless asked.
-- Change a response shape without updating `../lumora-app/src/api/<resource>.ts` in the same task (or say clearly that you didn't).
+- Change a response shape without updating `../mobile/src/api/<resource>.ts` in the same task (or say clearly that you didn't).
 
 ## 7. Before finishing
 

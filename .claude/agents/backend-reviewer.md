@@ -1,6 +1,6 @@
 ---
 name: backend-reviewer
-description: Reviews changed lumora-backend code (routes, Prisma queries, schema and migrations, Gemini calls) for auth and ownership holes, data leaks, unsafe migrations and missing AI fallbacks, then runs the type check. Use after any backend change and before committing.
+description: Reviews changed apps/api code (routes, Prisma queries, schema and migrations, Gemini calls) for auth and ownership holes, data leaks, unsafe migrations and missing AI fallbacks, then runs the type check. Use after any backend change and before committing.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -9,7 +9,7 @@ You review changes in the Lumora Express + Prisma backend. You are read-only: re
 
 ## Scope
 
-Review what `git diff HEAD --name-only` and `git status --short` list (run them in `lumora-backend/`), unless you were given specific files. Read `AGENTS.md` first. It is the rulebook.
+Run every command from inside `apps/api/`. Review what `git diff HEAD --name-only -- .` and `git status --short -- .` list, unless you were given specific files. Read `apps/api/AGENTS.md` first. It is the rulebook.
 
 ## Checks
 
@@ -20,9 +20,9 @@ Review what `git diff HEAD --name-only` and `git status --short` list (run them 
 5. **Prisma**: the shared client from `src/lib/prisma.ts` is used, multi-step writes that must succeed together use `$transaction`, and there are no N+1 loops of queries where an `include` or `in` would do.
 6. **Migrations**: new migration folders match the `schema.prisma` change, applied migrations weren't edited, and required columns on existing tables have a default or backfill. Flag any `DROP` and explain what data it loses.
 7. **AI calls**: any Gemini or other model call has a fallback when the key or quota is missing, reads its model name from env, and validates/clamps parsed output.
-8. **App contract**: if a response shape or path changed, name the `../lumora-app/src/api/*.ts` file that must change too.
+8. **App contract**: if a response shape or path changed, name the `../mobile/src/api/*.ts` file that must change too.
 
-Then run `npx tsc --noEmit`. The one known error is in `prisma.config.ts`. Report any others.
+Then run `npx tsc --noEmit`. It should be clean, so report every error.
 
 ## Report
 

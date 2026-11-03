@@ -18,7 +18,7 @@ Everything you'd change is in the `LUMORA` object at the top of `site.js`:
 
 | Key | Now |
 | --- | --- |
-| `playStoreUrl` | Placeholder package `com.anonymous.lumoraapp`. Must match `android.package` in `lumora-app/app.json` |
+| `playStoreUrl` | Placeholder package `com.anonymous.lumoraapp`. Must match `android.package` in `apps/mobile/app.json` |
 | `appStoreUrl` | Empty, so the App Store badge shows "Coming soon" |
 | `email` | `hello@getlumora.site` |
 | `betaApkUrl` | An EAS artifact URL on expo.dev (v1.2.0 preview build, 29 Oct 2026). Empty hides the beta section |

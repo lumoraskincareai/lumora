@@ -1,12 +1,12 @@
 # Lumora — project status
 
-Last updated: 2026-10-27. Covers `lumora-app/`, `lumora-backend/` and `lumora-website/`.
+Last updated: 2026-10-27. Covers `apps/mobile/`, `apps/api/` and `apps/website/`.
 
 ## Completed
 
 ### Accounts
 - [x] Email/password signup and login (JWT, bcrypt)
-- [x] Google sign-in, which links to an existing account with the same email ([setup](lumora-app/docs/GOOGLE_SIGN_IN.md))
+- [x] Google sign-in, which links to an existing account with the same email ([setup](apps/mobile/docs/GOOGLE_SIGN_IN.md))
 - [x] Forgot / reset password with an emailed code (Resend; the code is logged to the console when no key is set)
 - [x] Four-step onboarding: skin type, concerns, sensitivities, goals, saved as a skin profile
 - [x] Monthly budget on the skin profile
@@ -72,6 +72,8 @@ Last updated: 2026-10-27. Covers `lumora-app/`, `lumora-backend/` and `lumora-we
 
 ## Open / not done
 
+- [ ] **Admin + CMS website**: planned as `apps/admin`; catalog tools exist today only in the mobile app and `/admin` routes
+
 - [x] **Settings notification toggles** (2026-10-27): removed the three toggles that did nothing; Settings now explains the one real notification (8 pm streak reminder, pinned to IST)
 - [ ] **Shared routines**: the link is commented out in Explore, and there's no screen
 - [ ] **Premium**: the flag exists, but there's no way to purchase or upgrade
@@ -79,7 +81,7 @@ Last updated: 2026-10-27. Covers `lumora-app/`, `lumora-backend/` and `lumora-we
 - [ ] **Store launch**: the package name is still the placeholder `com.anonymous.lumoraapp`, the Play App Signing SHA-1 isn't registered for Google sign-in, and the website's `site.js` still has the placeholder Play Store URL (support email is set: hello@getlumora.site)
 - [x] **Backend type error** in `prisma.config.ts` fixed; `start`, `test`, `typecheck` and `postinstall: prisma generate` scripts added
 - [ ] **Tests**: backend `src/lib` is covered; routes and the app have no automated tests
-- [ ] **Deployment**: the backend only runs locally (`npm start` is ready for a host such as Render/Railway; set `TZ=Asia/Kolkata`)
+- [x] **Deployment**: the backend runs on Render (`/health` returned 200 on 2026-11-03). After the monorepo move its build settings need updating; see the root README
 - [x] **Cleanup** (2026-10-11): Expo template leftovers, the unused `Button` primitive, stray IDE-extension folders and irrelevant Prisma agent skills removed
 
 ## Health check (2026-10-27)

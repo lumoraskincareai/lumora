@@ -1,10 +1,13 @@
-# This repo holds the workspace docs, AI context and the website.
-# The app and backend are their own git repos.
-lumora-app/
-lumora-backend/
+node_modules/
 
+# Secrets; each app also has its own .gitignore
 .env
 .env.*
-node_modules/
+!.env.example
+
+# Claude Code, per-user
+.claude/settings.local.json
+.claude/worktrees/
+
 .DS_Store
 Thumbs.db
