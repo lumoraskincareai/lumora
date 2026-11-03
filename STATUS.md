@@ -67,7 +67,7 @@ Last updated: 2026-10-27. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [x] Demo data: `npm run seed:demo` / `unseed:demo` in the backend (8 `@demo.lumora.app` users, 16 extra products, reviews, posts, check-ins, routines)
 
 ### Quality
-- [x] 159 backend unit tests (`npm test`) for the daily brief, verdict and match %, ingredient rules, product matching, scan suggestions, heuristic face analysis and its oval crop, AI product lookup, and Gemini output validation. Written with AI agents; they found 10 bugs, all fixed (see project.md)
+- [x] 159 backend unit tests (`npm test`) for the daily brief, verdict and match %, ingredient rules, product matching, scan suggestions, heuristic face analysis and its oval crop, AI product lookup, and Gemini output validation. Written with AI agents; they found 10 bugs, all fixed
 - [x] `.env.example` in both projects; app `.env` no longer tracked
 
 ## Open / not done

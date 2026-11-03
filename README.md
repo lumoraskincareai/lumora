@@ -54,7 +54,7 @@ Run database migrations as a deliberate step (`npx prisma migrate deploy` in `ap
 | Understand the app's code | [apps/mobile/docs/ARCHITECTURE.md](apps/mobile/docs/ARCHITECTURE.md) |
 | See project status | [STATUS.md](STATUS.md) |
 | Contribute | [apps/mobile/CONTRIBUTING.md](apps/mobile/CONTRIBUTING.md) |
-| Read the project submission | [project.md](project.md) |
+| Understand the product decisions | [docs/ENGINEERING.md](docs/ENGINEERING.md) |
 
 ## Working with AI agents
 
