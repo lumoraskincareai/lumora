@@ -104,15 +104,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "09385b08-78a5-4594-ae30-dff71b257f82"
+        "projectId": "53dddbe1-96f9-4083-ad69-0e4406c10c25"
       }
     },
-    "owner": "anshikagupta5451s-team",
+    "owner": "lumoraskincareai",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/09385b08-78a5-4594-ae30-dff71b257f82"
+      "url": "https://u.expo.dev/53dddbe1-96f9-4083-ad69-0e4406c10c25"
     }
   }
 }
