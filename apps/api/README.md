@@ -39,7 +39,7 @@ Put these in `.env`. Everything except the database and JWT secrets is optional,
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET_NAME` | Image uploads | Uploads fail |
 | `GEMINI_API_KEY` | Face-scan analysis and "from the web" product suggestions | Heuristic face analysis; no web suggestions |
 | `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`, `GEMINI_SEARCH_MODEL` | Model overrides (free-tier quota is per model) | Built-in defaults |
-| `OPENWEATHER_API_KEY` | `GET /weather/current` | That endpoint fails; the daily brief uses Open-Meteo, which needs no key |
+| `OPENWEATHER_API_KEY` | `GET /weather/current` | That endpoint fails, so the Home screen's temperature/condition widget stays empty; the daily brief itself uses Open-Meteo, which needs no key |
 | `ADMIN_EMAILS` | Comma-separated emails allowed into `/admin` | Nobody is an admin |
 
 ## Routes
@@ -61,7 +61,7 @@ Put these in `.env`. Everything except the database and JWT secrets is optional,
 | `/bounties` | bounty list and completion |
 | `/ingredients` | glossary |
 | `/weather` | current weather (OpenWeather) |
-| `/admin` | catalog CRUD and Open Beauty Facts lookup |
+| `/admin` | catalog CRUD and Open Beauty Facts prefill (Open Beauty Facts is also used by the user-facing barcode check and photo match in `/products`) |
 
 ## Where the logic lives
 

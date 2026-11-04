@@ -78,7 +78,7 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [ ] **Admin + CMS website**: planned as `apps/admin`; catalog tools exist today only in the mobile app and `/admin` routes
 
 - [x] **Settings notification toggles** (2026-10-27): removed the three toggles that did nothing; Settings now explains the one real notification (8 pm streak reminder, pinned to IST)
-- [ ] **Shared routines**: the link is commented out in Explore, and there's no screen
+- [ ] **Shared routines**: partly built. The `isShared` column exists, but the link is commented out in Explore and there's no screen or route
 - [ ] **Premium**: the flag exists, but there's no way to purchase or upgrade
 - [ ] **Deploying email verification**: the new signup response has no tokens, so app builds released before this change can't sign up against an API that has it. Release the app with the API, and run `prisma migrate deploy` on the hosted database first
 - [ ] **Move the accounts to Lumora**: the EAS project, Neon database and git remote already use `lumoraskincareai`. The Google Cloud project, Firebase project (`google-services.json`), Android OAuth client and the Resend sender are still the old ones ([Google setup](apps/mobile/docs/GOOGLE_SIGN_IN.md))
@@ -90,13 +90,13 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [x] **Deployment**: the backend runs on Render (`/health` returned 200 on 2026-11-03). After the monorepo move its build settings need updating; see the root README
 - [x] **Cleanup** (2026-10-11, again 2026-11-04): Expo template leftovers, the unused `Button` primitive, stray IDE-extension folders and irrelevant Prisma agent skills removed; the Open Beauty Facts lookup no longer prints every raw response, and the upload route no longer logs twice
 
-## Health check (2026-10-27)
+## Health check (backend tests re-run 2026-11-04; other rows from 2026-10-27)
 
 | Check | Result |
 | --- | --- |
 | App `npx tsc --noEmit` | clean |
 | App `npm run lint` | 0 errors, 2 warnings (deliberate mount-only effects) |
 | Backend `npx tsc --noEmit` | clean |
-| Backend `npm test` | 136 pass, 0 fail, 0 skipped |
+| Backend `npm test` | 174 pass, 0 fail (run 2026-11-04) |
 | API smoke test (curl as the demo user) | login, refresh, streak, feed, popular, shelf, routines, bounties, daily brief: OK |
 | On-device run | not verified in this pass |

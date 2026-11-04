@@ -53,6 +53,7 @@ Run database migrations as a deliberate step (`npx prisma migrate deploy` in `ap
 | Publish the website | [apps/website/README.md](apps/website/README.md) |
 | Understand the app's code | [apps/mobile/docs/ARCHITECTURE.md](apps/mobile/docs/ARCHITECTURE.md) |
 | See project status | [STATUS.md](STATUS.md) |
+| See every feature, how it works, and what's wanted | [docs/FEATURES.md](docs/FEATURES.md) |
 | Contribute | [apps/mobile/CONTRIBUTING.md](apps/mobile/CONTRIBUTING.md) |
 | Understand the product decisions | [docs/ENGINEERING.md](docs/ENGINEERING.md) |
 

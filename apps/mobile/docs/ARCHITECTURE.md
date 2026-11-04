@@ -66,6 +66,7 @@ Detail routes use dynamic segments: `post/[id]`, `product/[id]`, `user/[id]`.
 | Screen | Purpose |
 | --- | --- |
 | `face-scan`, `face-scan-results` | Selfie capture, then concern scores, markers and product suggestions |
+| `product-scanner` | Photo scanner, opened from Explore's "Scan a product": ML Kit reads the pack text on the phone, `POST /products/match` matches it against the catalog and Open Beauty Facts, and nothing matched sends the text to `product-check?q=` (AI lookup). The photo never leaves the device |
 | `scan-product` | Barcode scanner. With `?returnTo=add-my-product` or `share-review` it hands the result back via `useScanStore`; otherwise it opens `product-check` |
 | `product-check` | "Is this right for me?" — the rule-based verdict for `?code=` from `/products/barcode/:code/check`. "I bought it" hands catalog products to `add-my-product` through `useScanStore` |
 | `product/[id]` | Product detail, with the same verdict from `/products/:id/verdict`. Both screens render it with `components/ProductVerdict.tsx` |
@@ -74,7 +75,7 @@ Detail routes use dynamic segments: `post/[id]`, `product/[id]`, `user/[id]`.
 | `routine-builder` | Create AM/PM routines |
 | `journal` | Check-in history with photos and notes |
 | `my-posts`, `my-stats` | The user's posts; stats and bounty points |
-| `edit-profile`, `settings` | Profile editing; theme and notification toggles |
+| `edit-profile`, `settings` | Profile editing; theme picker and a note about the 8 pm streak reminder (the old toggles were removed) |
 | `glossary` | Ingredient glossary |
 | `admin/`, `admin/product` | Catalog management for admins (server-checked against `ADMIN_EMAILS`) |
 
@@ -111,7 +112,7 @@ One file per resource in `src/api/`, each exporting thin typed functions:
 | `faceScan.ts` | `POST /face-scan/analyze`, `/face-scan/latest` |
 | `ingredients.ts` | `/ingredients`, `/ingredients/:name` |
 | `posts.ts` | `/posts`, `/posts/:id` (get, `DELETE`), `/like`, `/bookmark`, `/report`, `/comments`, `/posts/mine/all`, `/posts/bookmarked/all` |
-| `products.ts` | `/products`, `/products/:id`, `/products/:id/verdict`, `/products/barcode/:code`, `/products/barcode/:code/check` |
+| `products.ts` | `/products`, `/products/popular`, `/products/:id`, `/products/:id/verdict`, `/products/barcode/:code`, `/products/barcode/:code/check`, `/products/match`, `/products/identify` |
 | `recommendations.ts` | `/recommendations/latest`, `/generate`, `/from-scan?source=owned\|promoted\|web`, `/:id/feedback` |
 | `reviews.ts` | `/reviews` |
 | `routines.ts` | `/routines`, `/routines/me`, `DELETE /routines/:id`, `/routine-steps/:id/log` |
@@ -123,7 +124,7 @@ One file per resource in `src/api/`, each exporting thin typed functions:
 
 Image upload is the multipart call: [src/api/uploads.ts](../src/api/uploads.ts) builds a `FormData` of local URIs and returns hosted URLs (Supabase Storage), which are then attached to the post or check-in.
 
-The backend also serves `GET /products/popular`. **No client function calls it yet.**
+Explore's "Popular in the community" row calls `GET /products/popular` through `getPopularProducts`.
 
 ---
 
@@ -203,10 +204,6 @@ Embedded weights are 400, 500, 600, 700, 800. A `fontWeight` outside that set fa
 
 ## 9. Known rough edges
 
-- `SiteHeader` and `SiteFooter` are not imported anywhere.
-- `.gitignore` ignores `/android`, but a generated `android/` directory is present in the working tree (untracked).
-- Three `react-hooks/exhaustive-deps` warnings remain, all on deliberate mount-only effects.
-- No test setup exists.
-- The notification toggles in `settings.tsx` are local `useState` only — they aren't saved and don't affect what the backend sends.
+- Two `react-hooks/exhaustive-deps` warnings remain, on `app/index.tsx` and `share-review.tsx`.
+- No test setup exists for the app.
 - The "Shared routines" link in `explore.tsx` is commented out; there is no `shared-routines` screen.
-- Backend `/products/popular` has no client caller yet.
