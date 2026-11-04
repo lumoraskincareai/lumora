@@ -11,7 +11,7 @@ A skincare companion app built with **Expo (SDK 54)** and **expo-router**. Lumor
 | Area | What it does |
 | --- | --- |
 | **Auth** | Email/password login and signup with an emailed verification code, a password strength checklist, Google sign-in, forgot/reset password by emailed code; tokens stored in `expo-secure-store` |
-| **Onboarding** | Four steps — skin type, concerns, sensitivities, goals — saved as a skin profile |
+| **Onboarding** | One question per screen: skin type (or a quiz), sensitivity, ranked concerns, sensitivities and avoid-list, optional safety answers, skin tone, age, goals and budget. Resumable, and editable per section from the Profile tab |
 | **Daily brief** (`home`) | Rule-based "Today's brief" from UV, air quality, humidity, scans, check-ins and your shelf; mood check-in with optional photo; streak tracking |
 | **Journal** | Check-in history with photos and notes. Free tier keeps photos on the device; premium uploads them |
 | **Face scan** | Selfie against an oval guide → concern scores and on-photo markers (Gemini vision, with a heuristic fallback); product suggestions from your shelf, the catalog, or the web |
@@ -102,7 +102,7 @@ Fonts are embedded at build time rather than loaded at runtime, so a fresh clone
 ```
 app/                  expo-router routes (see docs/ARCHITECTURE.md)
   (auth)/             login, signup, verify-email, forgot-password, reset-password
-  (onboarding)/       skin-type, concerns, sensitivities, goals
+  (onboarding)/       skin-type (runs the whole question flow)
   (main)/             authenticated app (detail screens, scanners, journal, admin/)
     (tabs)/           home, explore, community, profile, routine
 assets/fonts/         Plus Jakarta Sans weights, embedded by the expo-font plugin

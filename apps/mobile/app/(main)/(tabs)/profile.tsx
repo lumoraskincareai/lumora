@@ -28,19 +28,15 @@ import { Text } from "../../../components/ui/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { Card } from "../../../components/ui/Card";
-import { getMySkinProfile } from "../../../src/api/skinProfile";
+import { getMySkinProfile, type SkinProfile } from "../../../src/api/skinProfile";
+import { SECTION_LABELS, type Section } from "../../../src/lib/onboardingSteps";
 import { getBounties } from "../../../src/api/bounties";
 import { getMyProfile } from "../../../src/api/users";
 import { useAuthStore } from "../../../src/store/useAuthStore";
 import { CheckInRow, isToday } from "../../../components/CheckInJournal";
 import { iconColors } from "../../../src/theme/iconColors";
 
-interface SkinProfile {
-  skinType: string;
-  concerns: string[];
-  sensitivities: string[];
-  goals: string[];
-}
+const PROFILE_SECTIONS: Section[] = ["skin", "safety", "you"];
 
 function getInitials(name?: string) {
   if (!name) return "?";
@@ -134,7 +130,7 @@ export default function ProfileScreen() {
   const loadProfile = useCallback(async () => {
     try {
       const data = await getMySkinProfile();
-      setProfile(data as SkinProfile);
+      setProfile(data);
     } catch {
       setProfile(null);
     } finally {
@@ -281,7 +277,7 @@ export default function ProfileScreen() {
                 className="text-xs font-medium"
                 style={{ color: theme.primary }}
               >
-                Redo
+                Retake
               </Text>
             </Pressable>
           )}
@@ -301,6 +297,9 @@ export default function ProfileScreen() {
               style={{ color: theme.foreground }}
             >
               {profile.skinType}
+              {profile.sensitiveSkin === "sometimes" || profile.sensitiveSkin === "often"
+                ? " · reacts easily"
+                : ""}
             </Text>
 
             {profile.concerns?.length > 0 && (
@@ -311,6 +310,19 @@ export default function ProfileScreen() {
                 <View className="flex-row flex-wrap mb-3">
                   {profile.concerns.map((c) => (
                     <Pill key={c} label={c} theme={theme} />
+                  ))}
+                </View>
+              </>
+            )}
+
+            {(profile.sensitivities?.length > 0 || (profile.avoidIngredients?.length ?? 0) > 0) && (
+              <>
+                <Text className="text-xs mb-1.5" style={{ color: theme.muted }}>
+                  Avoiding
+                </Text>
+                <View className="flex-row flex-wrap mb-3">
+                  {[...profile.sensitivities.filter((x) => !/none/i.test(x)), ...(profile.avoidIngredients ?? [])].map((x) => (
+                    <Pill key={x} label={x} theme={theme} />
                   ))}
                 </View>
               </>
@@ -327,6 +339,60 @@ export default function ProfileScreen() {
                   ))}
                 </View>
               </>
+            )}
+
+            {profile.completeness && (
+              <View
+                className="mt-4 pt-4"
+                style={{ borderTopWidth: 1, borderTopColor: theme.border }}
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-xs font-semibold" style={{ color: theme.foreground }}>
+                    Profile {profile.completeness.percent}% complete
+                  </Text>
+                  {profile.completeness.percent < 100 && (
+                    <Text className="text-xs" style={{ color: theme.muted }}>
+                      More answers, better matches
+                    </Text>
+                  )}
+                </View>
+                <View
+                  className="rounded-full overflow-hidden mb-3"
+                  style={{ height: 6, backgroundColor: theme.border }}
+                >
+                  <View
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${profile.completeness.percent}%`,
+                      backgroundColor: theme.primary,
+                    }}
+                  />
+                </View>
+                {PROFILE_SECTIONS.map((section) => {
+                  const done = profile.completeness?.done.includes(section);
+                  return (
+                    <Pressable
+                      key={section}
+                      onPress={() =>
+                        router.push({ pathname: "/(onboarding)/skin-type", params: { section } })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`${done ? "Edit" : "Add"} ${SECTION_LABELS[section]}`}
+                      className="flex-row items-center justify-between py-2"
+                    >
+                      <Text className="text-sm" style={{ color: theme.foreground }}>
+                        {SECTION_LABELS[section]}
+                      </Text>
+                      <Text
+                        className="text-xs font-medium"
+                        style={{ color: done ? theme.muted : theme.primary }}
+                      >
+                        {done ? "Edit" : "Add"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             )}
           </View>
         ) : (

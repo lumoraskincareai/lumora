@@ -48,7 +48,7 @@ Put these in `.env`. Everything except the database and JWT secrets is optional,
 | --- | --- |
 | `/auth` | signup (emails a verification code), verify-email, resend-verification, login, Google, token refresh, forgot/reset password |
 | `/users` | me, update me, public profile, push token |
-| `/skin-profile` | onboarding profile, budget |
+| `/skin-profile` | validated onboarding profile (POST), per-section edits (PATCH), budget, completeness on read |
 | `/products` | catalog, barcode lookup, popular, verdict with match %, photo-scan match, AI identify (`POST /products/identify`) |
 | `/user-products` | the user's shelf |
 | `/reviews` | product reviews |

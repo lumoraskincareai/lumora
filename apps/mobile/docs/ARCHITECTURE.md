@@ -32,7 +32,7 @@ File-based, with `typedRoutes` enabled in [app.json](../app.json) — route stri
 | --- | --- |
 | `app/index.tsx` | Entry gate. Calls `loadAuth()`, then redirects to `(main)/(tabs)/home` or `(auth)/login`. Renders `null` while checking. |
 | `app/(auth)/` | `login`, `signup` → `verify-email` (6-digit emailed code; a successful verification logs the user in), `forgot-password` → `reset-password` (6-digit emailed code) |
-| `app/(onboarding)/` | `skin-type` → `concerns` → `sensitivities` → `goals`; the last step saves the profile |
+| `app/(onboarding)/` | `skin-type`, one screen that runs the whole question flow from `src/lib/onboardingSteps.ts` (follow-up questions appear only when they apply; `?section=skin|safety|you` edits one part of an existing profile); a draft is kept on the device so it can be resumed |
 | `app/(main)/` | Everything post-auth. Stack with headers hidden. |
 | `app/(main)/(tabs)/` | Bottom tab bar |
 
@@ -134,7 +134,7 @@ Explore's "Popular in the community" row calls `GET /products/popular` through `
 
 **`useAuthStore`** ([src/store/useAuthStore.ts](../src/store/useAuthStore.ts)) — `user`, `accessToken`, `isAuthenticated`, plus `setAuth` / `logout` / `loadAuth` / `updateUser`. Tokens and the serialized user go to `expo-secure-store` through a small wrapper that no-ops on web (SecureStore has no web implementation), so **web sessions do not persist**. `loadAuth()` rehydrates on cold start and is called once from `app/index.tsx`.
 
-**`useOnboardingStore`** ([src/store/useOnboardingStore.ts](../src/store/useOnboardingStore.ts)) — in-memory only. Accumulates skin type, concerns, sensitivities, and goals across the four steps; the final step posts them and calls `reset()`. Killing the app mid-onboarding loses the answers by design.
+**`useOnboardingStore`** ([src/store/useOnboardingStore.ts](../src/store/useOnboardingStore.ts)) — holds the onboarding `answers` and the current step. Every change is saved as a draft in AsyncStorage (tied to the signed-in user), so someone who closes the app mid-flow resumes where they left off; the private safety answers are never written to the device. The final step posts the profile and calls `reset()`, which also clears the draft. The step order and which follow-ups appear come from [src/lib/onboardingSteps.ts](../src/lib/onboardingSteps.ts).
 
 **`useScanStore`** and **`useFaceScanStore`** — one-shot handoffs. The barcode scanner writes its result for the screen that pushed it (Add product / Write a review), and the face-scan screen hands its analysis to the results screen, so neither payload rides in a route param. The receiving screen clears the value once consumed.
 

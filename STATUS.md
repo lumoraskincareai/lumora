@@ -11,7 +11,8 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [x] Emails are trimmed and lowercased; lookups ignore case, so old mixed-case accounts still log in
 - [x] Google sign-in, which links to an existing account with the same email ([setup](apps/mobile/docs/GOOGLE_SIGN_IN.md))
 - [x] Forgot / reset password with an emailed code (Resend; the code is logged to the console when no key is set, and the same applies to the verification code)
-- [x] Four-step onboarding: skin type, concerns, sensitivities, goals, saved as a skin profile
+- [x] **Deeper onboarding** (2026-11-05): one question per screen with a "why we ask" line, animated progress and haptics. Skin type (or a 4-question quiz), how easily skin reacts, up to 3 ranked concerns, an acne follow-up, sensitivities plus a typed avoid-list, optional safety answers (pregnancy, breastfeeding, isotretinoin, prescription retinoid), skin tone, age range, ranked goals and budget. Answers are validated on the server, resume from a device draft, and are editable per section from the Profile tab with a completeness score
+- [x] The profile now drives more: typed avoid-ingredients and retinoid safety warnings reach the verdict, daily brief, and suggestion filters; goals and ranked concerns choose the brief's pick; fair skin gets earlier UV warnings; the web-suggestions cache refreshes when the profile changes
 - [x] Monthly budget on the skin profile
 - [x] Edit profile and public user profiles
 - [x] Sessions stay alive: the app refreshes the 15-minute access token automatically (`POST /auth/refresh`) and logs out with a message only when the refresh token is invalid
@@ -66,11 +67,11 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [x] Plus Jakarta Sans embedded natively
 - [x] EAS build profiles (development, preview, production) and OTA updates
 - [x] Beta APK and a static website (landing, download, privacy policy)
-- [x] 31 Prisma migrations
+- [x] 32 Prisma migrations
 - [x] Demo data: `npm run seed:demo` / `unseed:demo` in the backend (8 `@demo.lumora.app` users, 16 extra products, reviews, posts, check-ins, routines)
 
 ### Quality
-- [x] 174 backend unit tests (`npm test`) for password and email-verification rules, the daily brief, verdict and match %, ingredient rules, product matching, scan suggestions, heuristic face analysis and its oval crop, AI product lookup, and Gemini output validation. Written with AI agents; they found 10 bugs, all fixed
+- [x] 214 backend unit tests (`npm test`) for the skin profile rules, password and email-verification rules, the daily brief, verdict and match %, ingredient rules, product matching, scan suggestions, heuristic face analysis and its oval crop, AI product lookup, and Gemini output validation. Written with AI agents; they found 10 bugs, all fixed
 - [x] `.env.example` in both projects; app `.env` no longer tracked
 
 ## Open / not done
@@ -82,6 +83,8 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [ ] **Premium**: the flag exists, but there's no way to purchase or upgrade
 - [ ] **Deploying email verification**: the new signup response has no tokens, so app builds released before this change can't sign up against an API that has it. Release the app with the API, and run `prisma migrate deploy` on the hosted database first
 - [ ] **Move the accounts to Lumora**: the EAS project, Neon database and git remote already use `lumoraskincareai`. The Google Cloud project, Firebase project (`google-services.json`), Android OAuth client and the Resend sender are still the old ones ([Google setup](apps/mobile/docs/GOOGLE_SIGN_IN.md))
+- [ ] **Onboarding follow-ups**: a "complete your profile" card on Home, clearing skin tone and age once set, and the stored `climateZone` as a brief fallback
+- [ ] **Run the new migration**: `20261105000000_expand_skin_profile` is committed but must be applied (`prisma migrate deploy`) to each database before the API that uses it is deployed
 - [ ] **Rate limiting**: login and password-reset codes have no request limit yet (verification codes do: 5 tries)
 - [ ] **Token revocation**: refresh tokens are stateless, so logout can't invalidate one server-side
 - [ ] **Store launch**: the package name is still the placeholder `com.anonymous.lumoraapp`, the Play App Signing SHA-1 isn't registered for Google sign-in, and the website's `site.js` still has the placeholder Play Store URL (support email is set: hello@getlumora.site)

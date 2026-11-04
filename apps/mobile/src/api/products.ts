@@ -45,7 +45,7 @@ export function getProductByBarcode(code: string) {
 export type VerdictCheckStatus = "good" | "caution" | "bad" | "info";
 
 export interface VerdictCheck {
-  kind: "sensitivity" | "skinType" | "concerns" | "owned" | "clash" | "budget" | "community" | "usage" | "ingredients";
+  kind: "sensitivity" | "safety" | "skinType" | "concerns" | "owned" | "clash" | "budget" | "community" | "usage" | "ingredients";
   status: VerdictCheckStatus;
   title: string;
   detail: string;
