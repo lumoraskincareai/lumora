@@ -20,7 +20,7 @@ export default function SkinTypeStep() {
       nextDisabled={!skinType}
     >
       {options.map((opt) => (
-        <SelectChip key={opt} label={opt} selected={skinType === opt.toLowerCase()} onPress={() => setSkinType(opt.toLowerCase())} />
+        <SelectChip mode="radio" key={opt} label={opt} selected={skinType === opt.toLowerCase()} onPress={() => setSkinType(opt.toLowerCase())} />
       ))}
     </OnboardingStep>
   )

@@ -46,7 +46,6 @@ export async function setupPushNotifications() {
 
     try {
       await registerPushToken(token);
-      console.log("Push token registered with backend successfully");
     } catch (err) {
       console.log("Failed to register push token with backend:", err);
     }
