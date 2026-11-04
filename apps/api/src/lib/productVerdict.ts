@@ -14,13 +14,13 @@ import {
   activesIn,
   findAny,
   ingredientText,
-  sensitivityHits,
 } from "./ingredientRules";
+import { avoidHits, normalizeProfile } from "./skinProfile";
 
 export type CheckStatus = "good" | "caution" | "bad" | "info";
 
 export interface VerdictCheck {
-  kind: "sensitivity" | "skinType" | "concerns" | "owned" | "clash" | "budget" | "community" | "usage" | "ingredients";
+  kind: "sensitivity" | "safety" | "skinType" | "concerns" | "owned" | "clash" | "budget" | "community" | "usage" | "ingredients";
   status: CheckStatus;
   title: string;
   detail: string;
@@ -80,6 +80,8 @@ const PROFILE_CONCERNS: Record<string, { label: string; keywords: string[] }> = 
   dullness: { label: "dullness", keywords: CONCERN_DEFS.dullness.keywords },
   "large pores": { label: "large pores", keywords: ["niacinamide", "salicylic acid", "clay", "zinc"] },
   "fine lines": { label: "fine lines", keywords: ["retinol", "retinal", "peptide", "bakuchiol", "vitamin c", "ascorbic"] },
+  "dark circles": { label: "dark circles", keywords: CONCERN_DEFS.darkCircles.keywords },
+  redness: { label: "redness", keywords: ["centella", "cica", "azelaic", "niacinamide", "allantoin", "panthenol", "madecassoside", "green tea"] },
 };
 
 const SINGLE_USE_CATEGORIES = ["sunscreen", "moisturizer", "cleanser", "toner"];
@@ -88,22 +90,13 @@ function ownedName(up: VerdictInput["owned"][number]) {
   return up.product?.name ?? up.customName ?? "a product you own";
 }
 
-function skinCheck(text: string, skinType: string): VerdictCheck | null {
+function skinCheck(text: string, skinType: string, isSensitive = false): VerdictCheck | null {
   const skin = skinType.toLowerCase();
   const pretty = skin === "combo" ? "combination" : skin;
 
-  if (skin === "oily" || skin === "combo" || skin === "combination") {
-    const clogger = findAny(text, PORE_CLOGGING);
-    if (clogger) {
-      return {
-        kind: "skinType",
-        status: "caution",
-        title: `Contains ${clogger}`,
-        detail: `Often reported to clog pores on ${pretty} skin. Patch-test on your jawline first.`,
-      };
-    }
-  }
-  if (skin === "sensitive") {
+  // Skin that reacts easily (the "sensitive" flag, or the older "sensitive"
+  // skin type) can be oily or dry as well, so this check isn't tied to the type.
+  if (skin === "sensitive" || isSensitive) {
     const irritant = findAny(text, [
       ...SENSITIVITY_INGREDIENTS.fragrance!,
       ...SENSITIVITY_INGREDIENTS["essential oils"]!,
@@ -116,6 +109,18 @@ function skinCheck(text: string, skinType: string): VerdictCheck | null {
         status: "caution",
         title: `Contains ${irritant}`,
         detail: "A common trigger for sensitive skin — patch-test behind your ear for 24 hours first.",
+      };
+    }
+  }
+
+  if (skin === "oily" || skin === "combo" || skin === "combination") {
+    const clogger = findAny(text, PORE_CLOGGING);
+    if (clogger) {
+      return {
+        kind: "skinType",
+        status: "caution",
+        title: `Contains ${clogger}`,
+        detail: `Often reported to clog pores on ${pretty} skin. Patch-test on your jawline first.`,
       };
     }
   }
@@ -311,6 +316,7 @@ const PROFILE_TO_SCAN: Record<string, ConcernKey> = {
   pigmentation: "darkSpots",
   dryness: "dryness",
   dullness: "dullness",
+  "dark circles": "darkCircles",
 };
 
 // More of the ingredients known to target a concern means a better fit.
@@ -362,6 +368,8 @@ function matchPercent(checks: VerdictCheck[], concerns: ConcernFit[]): number {
     if (c.kind === "community") score += c.status === "good" ? 5 : c.status === "caution" ? -10 : 0;
   }
   if (checks.some((c) => c.kind === "sensitivity" && c.status === "bad")) score = Math.min(score, 15);
+  // A safety warning (e.g. a retinoid while pregnant) outranks every other positive.
+  if (checks.some((c) => c.kind === "safety" && c.status === "bad")) score = Math.min(score, 5);
   return Math.round(Math.max(0, Math.min(100, score)));
 }
 
@@ -382,8 +390,12 @@ export function buildVerdict(input: VerdictInput): Verdict {
     });
   }
 
-  const sensitivities = (profile?.sensitivities ?? []).filter((s) => !/none/i.test(s));
-  const hits = sensitivityHits(text, sensitivities);
+  // Older profiles have none of the newer answers; normalizeProfile treats
+  // those as "unknown", so they are judged exactly as before.
+  const np = profile ? normalizeProfile(profile) : null;
+  const sensitivities = np?.sensitivities ?? [];
+  const avoid = np ? avoidHits(text, np) : null;
+  const hits = avoid?.sensitivity ?? [];
   if (hits.length) {
     for (const h of hits) {
       checks.push({
@@ -402,8 +414,29 @@ export function buildVerdict(input: VerdictInput): Verdict {
     });
   }
 
-  if (profile && hasIngredients) {
-    const s = skinCheck(text, profile.skinType);
+  // Ingredients the person typed in themselves.
+  for (const h of avoid?.custom ?? []) {
+    checks.push({
+      kind: "sensitivity",
+      status: "bad",
+      title: `Contains ${h.found}`,
+      detail: `You asked us to steer you away from ${h.label}.`,
+    });
+  }
+
+  // Cautious safety warning for pregnancy, breastfeeding, isotretinoin or a
+  // prescription retinoid. Information only, never medical advice.
+  if (avoid?.retinoid) {
+    checks.push({
+      kind: "safety",
+      status: "bad",
+      title: `Contains ${avoid.retinoid.found}, a retinoid`,
+      detail: avoid.retinoid.reason,
+    });
+  }
+
+  if (np && hasIngredients) {
+    const s = skinCheck(text, np.skinType, np.isSensitive);
     if (s) checks.push(s);
   }
   if (hasIngredients) {
@@ -444,7 +477,9 @@ export function buildVerdict(input: VerdictInput): Verdict {
     headline = "Finish your skin quiz for a personal verdict";
   } else if (bad) {
     overall = "avoid";
-    headline = "Probably not for you";
+    headline = checks.some((c) => c.kind === "safety" && c.status === "bad")
+      ? "Not recommended for your situation"
+      : "Probably not for you";
   } else if (good >= 2 && caution === 0) {
     overall = "great";
     headline = "Great match for you";

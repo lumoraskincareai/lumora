@@ -64,6 +64,14 @@ function profile(o: Partial<SkinProfile> = {}): SkinProfile {
     goals: [],
     climateZone: null,
     monthlyBudget: null,
+    sensitiveSkin: null,
+    acneType: null,
+    skinTone: null,
+    ageRange: null,
+    specialSituations: [],
+    avoidIngredients: [],
+    profileVersion: 1,
+    completedSections: [],
     createdAt: NOW,
     updatedAt: NOW,
     ...o,
@@ -302,5 +310,47 @@ describe("promotedSuggestions", () => {
     const unknown = product({ id: "u", name: "Mystery Clay Mask", ingredients: ["kaolin clay"], price: 0 });
     const { concerns } = promotedSuggestions([concern("oiliness", 80)], [unknown], [], profile({ monthlyBudget: 1 }));
     assert.equal(concerns[0]!.items[0]!.price, null);
+  });
+});
+
+describe("suggestions respect the deeper profile answers", () => {
+  const retinolCream = product({ id: "r1", name: "Night Cream", category: "moisturizer", ingredients: ["Retinol", "Niacinamide"], price: 300 });
+  const plainGel = product({ id: "g1", name: "Clear Gel", category: "serum", ingredients: ["Salicylic Acid", "Niacinamide"], price: 300 });
+
+  test("the catalog source never offers a retinoid to someone who is pregnant", () => {
+    const { concerns } = promotedSuggestions(
+      [concern("acne", 80)],
+      [retinolCream, plainGel],
+      [],
+      profile({ specialSituations: ["pregnant"] }),
+    );
+    const ids = concerns[0]!.items.map((i) => i.productId);
+    assert.ok(ids.includes("g1"));
+    assert.ok(!ids.includes("r1"));
+  });
+
+  test("the catalog source skips an ingredient the person typed in", () => {
+    const { concerns } = promotedSuggestions(
+      [concern("acne", 80)],
+      [plainGel],
+      [],
+      profile({ avoidIngredients: ["salicylic acid"] }),
+    );
+    assert.equal(concerns[0]!.items.length, 0);
+  });
+
+  test("the catalog source behaves as before for a profile without the new answers", () => {
+    const { concerns } = promotedSuggestions([concern("acne", 80)], [retinolCream, plainGel], [], profile());
+    assert.equal(concerns[0]!.items.length, 2);
+  });
+
+  test("the owned source does not tell someone avoiding retinoids to use one", () => {
+    const mine = [owned({ id: "up1", productId: "r1", product: retinolCream }), owned({ id: "up2", productId: "g1", product: plainGel })];
+    const { concerns } = ownedSuggestions([concern("acne", 80)], mine, NOW, profile({ specialSituations: ["breastfeeding"] }));
+    assert.deepEqual(concerns[0]!.items.map((i) => i.productId), ["g1"]);
+    const unrestricted = ownedSuggestions([concern("acne", 80)], mine, NOW, profile());
+    assert.equal(unrestricted.concerns[0]!.items.length, 2);
+    const noProfile = ownedSuggestions([concern("acne", 80)], mine, NOW);
+    assert.equal(noProfile.concerns[0]!.items.length, 2);
   });
 });

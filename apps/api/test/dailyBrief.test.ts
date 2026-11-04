@@ -57,6 +57,14 @@ function profile(o: Partial<SkinProfile> = {}): SkinProfile {
     goals: [],
     climateZone: null,
     monthlyBudget: null,
+    sensitiveSkin: null,
+    acneType: null,
+    skinTone: null,
+    ageRange: null,
+    specialSituations: [],
+    avoidIngredients: [],
+    profileVersion: 1,
+    completedSections: [],
     createdAt: NOW,
     updatedAt: NOW,
     ...o,
@@ -378,5 +386,71 @@ describe("conflictsWithSensitivities", () => {
     assert.equal(conflictsWithSensitivities("cetearyl alcohol, glycerin", ["Alcohol"]), false);
     assert.equal(conflictsWithSensitivities("parfum", ["gluten"]), false);
     assert.equal(conflictsWithSensitivities("parfum", []), false);
+  });
+});
+
+describe("buildDailyBrief: deeper profile answers", () => {
+  test("a goal picks the product when no concern does", () => {
+    const b = buildDailyBrief(input({ skinProfile: profile({ goals: ["hydration"] }), catalog: CATALOG }));
+    assert.equal(b.pick?.productId, "hya");
+    assert.match(b.pick?.reason ?? "", /hydration goal/);
+  });
+
+  test("an even-tone goal maps to the dark-spot ingredients", () => {
+    const b = buildDailyBrief(input({ skinProfile: profile({ goals: ["even tone"] }), catalog: CATALOG }));
+    assert.equal(b.pick?.productId, "vitc");
+  });
+
+  test("a concern still beats a goal", () => {
+    const b = buildDailyBrief(input({ skinProfile: profile({ concerns: ["pigmentation"], goals: ["hydration"] }), catalog: CATALOG }));
+    assert.equal(b.pick?.productId, "vitc");
+  });
+
+  test("the concern the person ranked first decides the pick", () => {
+    const a = buildDailyBrief(input({ skinProfile: profile({ concerns: ["pigmentation", "dryness"] }), catalog: CATALOG }));
+    const c = buildDailyBrief(input({ skinProfile: profile({ concerns: ["dryness", "pigmentation"] }), catalog: CATALOG }));
+    assert.equal(a.pick?.productId, "vitc");
+    assert.notEqual(c.pick?.productId, "vitc");
+  });
+
+  test("redness steers toward calming ingredients", () => {
+    const calming = product({ id: "cica", name: "Calm Gel", category: "serum", ingredients: ["centella asiatica", "panthenol"], price: 500 });
+    const b = buildDailyBrief(input({ skinProfile: profile({ concerns: ["redness"] }), catalog: [...CATALOG, calming] }));
+    assert.equal(b.pick?.productId, "cica");
+  });
+
+  test("a retinoid is never picked for someone who is pregnant", () => {
+    const fineLines = profile({ concerns: ["fine lines"], specialSituations: ["pregnant"] });
+    const b = buildDailyBrief(input({ skinProfile: fineLines, catalog: [retinol, vitC] }));
+    assert.notEqual(b.pick?.productId, "ret");
+  });
+
+  test("the same profile without that situation can get the retinoid", () => {
+    const b = buildDailyBrief(input({ skinProfile: profile({ concerns: ["fine lines"] }), catalog: [retinol] }));
+    assert.equal(b.pick?.productId, "ret");
+  });
+
+  test("an ingredient the person typed in is filtered out of the pick", () => {
+    const b = buildDailyBrief(
+      input({ skinProfile: profile({ concerns: ["pigmentation"], avoidIngredients: ["ferulic acid"] }), catalog: CATALOG }),
+    );
+    assert.notEqual(b.pick?.productId, "vitc");
+  });
+
+  test("fair skin gets the UV warning one level sooner; no tone changes nothing", () => {
+    const uv5 = conditions({ uvMax: 5 });
+    const plain = buildDailyBrief(input({ conditions: uv5, skinProfile: profile() }));
+    const fair = buildDailyBrief(input({ conditions: uv5, skinProfile: profile({ skinTone: 2 }) }));
+    const deep = buildDailyBrief(input({ conditions: uv5, skinProfile: profile({ skinTone: 5 }) }));
+    assert.equal(plain.headline, "Moderate UV — a daily SPF is enough");
+    assert.equal(fair.headline, "High UV today — don't skip sunscreen");
+    assert.match(fair.tips[0]?.detail ?? "", /Fair skin burns faster/);
+    assert.equal(deep.headline, plain.headline);
+  });
+
+  test("a UV tip for a typical reading is worded exactly as before", () => {
+    const b = buildDailyBrief(input({ conditions: conditions({ uvMax: 9 }) }));
+    assert.equal(b.tips[0]?.title, "UV index peaks at 9 (very high)");
+    assert.doesNotMatch(b.tips[0]?.detail ?? "", /Fair skin/);
   });
 });

@@ -3,7 +3,8 @@ import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/requireAuth";
 import { ConcernScore } from "../lib/faceAnalysis";
 import { getSkinConditions } from "../lib/environment";
-import { buildDailyBrief, conflictsWithSensitivities, DailyBrief } from "../lib/dailyBrief";
+import { buildDailyBrief, DailyBrief } from "../lib/dailyBrief";
+import { conflictsWithProfile, normalizeProfile, profileFingerprint, webProfileContext } from "../lib/skinProfile";
 import {
   detectedConcerns,
   ownedSuggestions,
@@ -193,7 +194,7 @@ router.get("/from-scan", requireAuth, async (req, res) => {
     (scan.concerns as unknown as { items: ConcernScore[] }).items ?? [],
   );
   const budget = skinProfile?.monthlyBudget ?? null;
-  const ownedResult = ownedSuggestions(concerns, owned, now);
+  const ownedResult = ownedSuggestions(concerns, owned, now, skinProfile);
   const ownedMatches = ownedResult.concerns.reduce((n, c) => n + c.items.length, 0);
 
   const source: SuggestionSource =
@@ -216,35 +217,40 @@ router.get("/from-scan", requireAuth, async (req, res) => {
     });
   }
 
-  // web — reuse this scan's cached result unless the budget changed.
-  type CachedWeb = WebSearchResult & { budget: number | null; generatedAt: string };
+  // web — reuse this scan's cached result unless the profile changed. The
+  // fingerprint covers skin type, sensitivities, avoid-list, restrictions and
+  // budget, so editing any of them gets fresh suggestions. Results cached
+  // before the fingerprint existed have none, so they are refreshed once.
+  type CachedWeb = WebSearchResult & { budget: number | null; generatedAt: string; profileHash?: string };
+  const profileHash = skinProfile ? profileFingerprint(skinProfile) : "none";
   let web = scan.webSuggestions as unknown as CachedWeb | null;
-  if (!web || web.budget !== budget) {
+  if (!web || web.budget !== budget || web.profileHash !== profileHash) {
     const found = await searchWebProducts({
       concerns,
       skinType: skinProfile?.skinType ?? null,
       sensitivities: skinProfile?.sensitivities ?? [],
       budget,
       ownedNames: owned.map((up) => up.product?.name ?? up.customName ?? "").filter(Boolean),
+      context: skinProfile ? webProfileContext(normalizeProfile(skinProfile)) : null,
     });
     if (!found) {
       return res.status(503).json({
         error: "Couldn't search the web right now — try again in a bit, or use Lumora picks.",
       });
     }
-    web = { ...found, budget, generatedAt: now.toISOString() };
+    web = { ...found, budget, generatedAt: now.toISOString(), profileHash };
     await prisma.faceScan.update({
       where: { id: scan.id },
       data: { webSuggestions: JSON.parse(JSON.stringify(web)) },
     });
   }
 
-  const sensitivities = skinProfile?.sensitivities ?? [];
   const planned = planWithinBudget(
     concerns,
     (c) =>
       (web!.concerns.find((w) => w.key === c.key)?.products ?? [])
-        .filter((p) => !conflictsWithSensitivities(`${p.name} ${p.keyIngredient}`.toLowerCase(), sensitivities))
+        // Gemini's answer is untrusted: drop anything that hits the person's avoid-list.
+        .filter((p) => !(skinProfile && conflictsWithProfile(`${p.name} ${p.keyIngredient}`.toLowerCase(), skinProfile)))
         .map((p, i) => ({
           rank: -i, // keep Gemini's cheapest → premium order
           item: {

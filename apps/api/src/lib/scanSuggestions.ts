@@ -16,7 +16,7 @@
 import type { Product, SkinProfile, UserProduct } from "@prisma/client";
 import { CONCERN_DEFS, ConcernKey } from "./skinConcerns";
 import type { ConcernScore } from "./faceAnalysis";
-import { conflictsWithSensitivities } from "./dailyBrief";
+import { avoidHits, conflictsWithProfile, normalizeProfile, type ProfileRow } from "./skinProfile";
 
 export type SuggestionSource = "owned" | "promoted" | "web";
 
@@ -77,10 +77,22 @@ function baseConcern(c: ConcernScore): Omit<ConcernSuggestions, "items" | "empty
   return { key: c.key, label: def.label, score: c.score, freeTips: def.freeTips };
 }
 
-export function ownedSuggestions(concerns: ConcernScore[], owned: OwnedProduct[], now: Date) {
-  const usable = owned.filter(
-    (up) => !up.isFinished && !(up.expiresAt && up.expiresAt.getTime() < now.getTime()),
-  );
+export function ownedSuggestions(
+  concerns: ConcernScore[],
+  owned: OwnedProduct[],
+  now: Date,
+  profile: ProfileRow | null = null,
+) {
+  const np = profile ? normalizeProfile(profile) : null;
+  const usable = owned.filter((up) => {
+    if (up.isFinished || (up.expiresAt && up.expiresAt.getTime() < now.getTime())) return false;
+    // Never tell someone to "use" a retinoid they've been advised to avoid.
+    if (np) {
+      const text = up.product ? catalogText(up.product) : (up.customName ?? "").toLowerCase();
+      if (avoidHits(text, np).retinoid) return false;
+    }
+    return true;
+  });
 
   const result: ConcernSuggestions[] = concerns.map((c) => {
     const def = CONCERN_DEFS[c.key as ConcernKey];
@@ -190,9 +202,8 @@ export function promotedSuggestions(
   profile: SkinProfile | null,
 ) {
   const ownedIds = new Set(owned.map((up) => up.productId).filter(Boolean));
-  const sensitivities = profile?.sensitivities ?? [];
   const usable = catalog.filter(
-    (p) => !ownedIds.has(p.id) && !conflictsWithSensitivities(catalogText(p), sensitivities),
+    (p) => !ownedIds.has(p.id) && !(profile && conflictsWithProfile(catalogText(p), profile)),
   );
 
   return planWithinBudget(

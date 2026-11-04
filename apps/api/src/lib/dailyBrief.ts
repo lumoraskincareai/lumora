@@ -15,6 +15,7 @@ import { CONCERN_DEFS, ConcernKey } from "./skinConcerns";
 import type { ConcernScore } from "./faceAnalysis";
 import type { SkinConditions } from "./environment";
 import { sensitivityHits } from "./ingredientRules";
+import { conflictsWithProfile, normalizeProfile } from "./skinProfile";
 
 export type TipSource =
   | "uv"
@@ -91,6 +92,15 @@ const PROFILE_CONCERN_MAP: Record<string, ConcernKey> = {
   dryness: "dryness",
   dullness: "dullness",
   "large pores": "oiliness",
+  "dark circles": "darkCircles",
+};
+
+// What someone wants to achieve → the concern it works on, so a goal can
+// pick the product when none of their concerns decides it.
+const GOAL_CONCERN_MAP: Record<string, ConcernKey> = {
+  "clear skin": "acne",
+  "even tone": "darkSpots",
+  "oil control": "oiliness",
 };
 
 const PHOTOSENSITIZING = ["retinol", "retinal", "tretinoin", "glycolic", "lactic acid", "alpha hydroxy"];
@@ -128,36 +138,46 @@ function uvSignal(input: BriefInput): Signal | null {
     why: `UV peaks at ${uv} today`,
   };
 
+  // Skin that burns easily (Fitzpatrick I-II, from onboarding) reaches each
+  // level one UV point sooner. Nothing changes without a skin tone on file.
+  const tone = normalizeProfile(input.skinProfile).skinTone;
+  const burnsEasily = tone != null && tone <= 2;
+  const level = uv + (burnsEasily ? 1 : 0);
+  const fairNote = burnsEasily ? " Fair skin burns faster, so this matters more for you." : "";
+
   const tips: BriefTip[] = [];
   let priority: number;
   let headline: string;
 
-  if (uv >= 8) {
+  if (level >= 8) {
     priority = 90;
     headline = "Very high UV — sun protection comes first today";
     tips.push({
       source: "uv",
-      title: `UV index peaks at ${uv} (very high)`,
+      title: `UV index peaks at ${uv} (${uv >= 8 ? "very high" : "high for fair skin"})`,
       detail:
-        "Unprotected skin can burn in under 15 minutes. Use SPF 50, reapply every 2 hours outdoors, and stay in shade between 11am and 3pm.",
+        "Unprotected skin can burn in under 15 minutes. Use SPF 50, reapply every 2 hours outdoors, and stay in shade between 11am and 3pm." +
+        fairNote,
     });
-  } else if (uv >= 6) {
+  } else if (level >= 6) {
     priority = 75;
     headline = "High UV today — don't skip sunscreen";
     tips.push({
       source: "uv",
-      title: `UV index peaks at ${uv} (high)`,
+      title: `UV index peaks at ${uv} (${uv >= 6 ? "high" : "moderate, high for fair skin"})`,
       detail:
-        "Apply SPF 30+ as the last morning step — about two finger-lengths for face and neck — and reapply if you're out past midday.",
+        "Apply SPF 30+ as the last morning step — about two finger-lengths for face and neck — and reapply if you're out past midday." +
+        fairNote,
     });
-  } else if (uv >= 3) {
+  } else if (level >= 3) {
     priority = 45;
     headline = "Moderate UV — a daily SPF is enough";
     tips.push({
       source: "uv",
-      title: `UV index peaks at ${uv} (moderate)`,
+      title: `UV index peaks at ${uv} (${uv >= 3 ? "moderate" : "low, but fair skin still burns"})`,
       detail:
-        "Most UVA still passes through clouds and windows, which drives dark spots and early lines. SPF 30 in the morning covers it.",
+        "Most UVA still passes through clouds and windows, which drives dark spots and early lines. SPF 30 in the morning covers it." +
+        fairNote,
     });
   } else if (photosensitizer) {
     priority = 25;
@@ -451,8 +471,12 @@ function inventorySignal(input: BriefInput): Signal | null {
 // Fallback when nothing today is pressing: work toward what they told us
 // in onboarding.
 function profileNeed(profile: SkinProfile): Need {
-  for (const concern of profile.concerns) {
-    const key = PROFILE_CONCERN_MAP[concern.toLowerCase()];
+  const p = normalizeProfile(profile);
+
+  // Concerns come in the order the person ranked them, so the first one
+  // that maps to a product need wins.
+  for (const concern of p.concerns) {
+    const key = PROFILE_CONCERN_MAP[concern];
     if (key) {
       return {
         categories: [],
@@ -461,8 +485,29 @@ function profileNeed(profile: SkinProfile): Need {
       };
     }
   }
-  if (profile.concerns.some((c) => c.toLowerCase() === "fine lines")) {
+  if (p.concerns.includes("fine lines")) {
     return { categories: ["serum"], keywords: ["retinol", "peptide", "vitamin c"], why: "it targets fine lines, one of your goals" };
+  }
+  if (p.concerns.includes("redness")) {
+    return { categories: [], keywords: ["centella", "cica", "azelaic", "niacinamide", "panthenol"], why: "it calms redness, one of your goals" };
+  }
+
+  // No concern decided it: work toward what they said they want.
+  for (const goal of p.goals) {
+    const key = GOAL_CONCERN_MAP[goal];
+    if (key) {
+      return {
+        categories: [],
+        keywords: CONCERN_DEFS[key].keywords,
+        why: `it supports your goal of ${goal}`,
+      };
+    }
+    if (goal === "hydration") {
+      return { categories: ["moisturizer", "serum"], keywords: ["hyaluronic", "ceramide", "glycerin"], why: "it supports your hydration goal" };
+    }
+    if (goal === "anti-aging") {
+      return { categories: ["serum"], keywords: ["retinol", "peptide", "vitamin c"], why: "it supports your anti-aging goal" };
+    }
   }
   return {
     categories: ["moisturizer"],
@@ -488,7 +533,7 @@ function pickProduct(input: BriefInput, need: Need): BriefPick | null {
   const ownedBest = input.owned
     .filter((up) => !isExpired(up, input.now))
     .filter((up) => !(up.productId && input.dislikedProductIds.has(up.productId)))
-    .filter((up) => !conflictsWithSensitivities(ownedText(up), skinProfile.sensitivities))
+    .filter((up) => !conflictsWithProfile(ownedText(up), skinProfile))
     .map((up) => ({ up, score: matchScore(ownedText(up), up.product?.category ?? null, need) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)[0];
@@ -514,7 +559,7 @@ function pickProduct(input: BriefInput, need: Need): BriefPick | null {
     .filter((p) => !ownedIds.has(p.id))
     .filter((p) => !input.dislikedProductIds.has(p.id))
     .filter((p) => (budget ? p.price <= budget : true))
-    .filter((p) => !conflictsWithSensitivities(productText(p), skinProfile.sensitivities))
+    .filter((p) => !conflictsWithProfile(productText(p), skinProfile))
     .map((p) => ({ p, score: matchScore(productText(p), p.category, need) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || a.p.price - b.p.price)[0];

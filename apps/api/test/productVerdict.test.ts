@@ -16,6 +16,14 @@ function profile(over: Partial<SkinProfile> = {}): SkinProfile {
     goals: [],
     climateZone: null,
     monthlyBudget: null,
+    sensitiveSkin: null,
+    acneType: null,
+    skinTone: null,
+    ageRange: null,
+    specialSituations: [],
+    avoidIngredients: [],
+    profileVersion: 1,
+    completedSections: [],
     createdAt: NOW,
     updatedAt: NOW,
     ...over,
@@ -405,5 +413,90 @@ describe("match percentage and concern bars", () => {
       }),
     );
     assert.ok(Number.isInteger(v.match.percent) && v.match.percent! >= 0 && v.match.percent! <= 100);
+  });
+});
+
+describe("deeper profile answers", () => {
+  const retinolSerum = { name: "Night Serum", ingredients: ["Aqua", "Retinol", "Glycerin"] };
+
+  test("a retinoid is flagged as a safety warning for someone pregnant, and caps the match at 5", () => {
+    const v = buildVerdict(input({ product: retinolSerum, profile: profile({ specialSituations: ["pregnant"] }) }));
+    const safety = find(v, "safety");
+    assert.equal(safety.length, 1);
+    assert.equal(safety[0]!.status, "bad");
+    assert.match(safety[0]!.detail, /doctor/i);
+    assert.equal(v.overall, "avoid");
+    assert.equal(v.headline, "Not recommended for your situation");
+    assert.ok(v.match.percent !== null && v.match.percent <= 5);
+  });
+
+  test("breastfeeding, isotretinoin and a prescription retinoid each flag retinoids", () => {
+    for (const situation of ["breastfeeding", "isotretinoin", "prescription retinoid"]) {
+      const v = buildVerdict(input({ product: retinolSerum, profile: profile({ specialSituations: [situation] }) }));
+      assert.equal(find(v, "safety").length, 1, situation);
+    }
+  });
+
+  test("without a special situation the same retinol serum is not a safety warning", () => {
+    const v = buildVerdict(input({ product: retinolSerum, profile: profile() }));
+    assert.equal(find(v, "safety").length, 0);
+    assert.notEqual(v.overall, "avoid");
+  });
+
+  test("bakuchiol is not flagged as a retinoid", () => {
+    const v = buildVerdict(
+      input({ product: { ingredients: ["Aqua", "Bakuchiol"] }, profile: profile({ specialSituations: ["pregnant"] }) }),
+    );
+    assert.equal(find(v, "safety").length, 0);
+  });
+
+  test("an ingredient the person typed in is a bad sensitivity check", () => {
+    const v = buildVerdict(
+      input({ product: { ingredients: ["Aqua", "Benzyl Alcohol"] }, profile: profile({ avoidIngredients: ["benzyl alcohol"] }) }),
+    );
+    const s = find(v, "sensitivity");
+    assert.equal(s.length, 1);
+    assert.equal(s[0]!.status, "bad");
+    assert.match(s[0]!.detail, /asked us to steer you away from benzyl alcohol/);
+    assert.ok(v.match.percent !== null && v.match.percent <= 15);
+  });
+
+  test("oily skin that also reacts easily gets the sensitive-skin irritant check", () => {
+    const fragranced = { ingredients: ["Aqua", "Parfum"] };
+    const plain = buildVerdict(input({ product: fragranced, profile: profile({ skinType: "oily" }) }));
+    assert.equal(find(plain, "skinType").length, 0);
+    const reactive = buildVerdict(input({ product: fragranced, profile: profile({ skinType: "oily", sensitiveSkin: "often" }) }));
+    assert.equal(find(reactive, "skinType")[0]?.status, "caution");
+    const rarely = buildVerdict(input({ product: fragranced, profile: profile({ skinType: "oily", sensitiveSkin: "rarely" }) }));
+    assert.equal(find(rarely, "skinType").length, 0);
+  });
+
+  test("redness and dark circles concerns are recognised", () => {
+    const v = buildVerdict(
+      input({ product: { ingredients: ["Aqua", "Centella Asiatica", "Niacinamide", "Caffeine"] }, profile: profile({ concerns: ["redness", "dark circles"] }) }),
+    );
+    const labels = v.match.concerns.map((c) => c.label.toLowerCase());
+    assert.ok(labels.includes("redness"));
+    assert.ok(labels.includes("dark circles"));
+  });
+
+  test("a profile saved before the newer questions is judged exactly as before", () => {
+    const old = profile({ skinType: "oily", concerns: ["acne"], sensitivities: ["fragrance"], goals: ["clear skin"] });
+    const a = buildVerdict(input({ product: { ingredients: ["Aqua", "Salicylic Acid"] }, profile: old }));
+    const b = buildVerdict(
+      input({
+        product: { ingredients: ["Aqua", "Salicylic Acid"] },
+        profile: profile({
+          skinType: "oily",
+          concerns: ["acne"],
+          sensitivities: ["fragrance"],
+          goals: ["clear skin"],
+          specialSituations: [],
+          avoidIngredients: [],
+        }),
+      }),
+    );
+    assert.deepEqual(a, b);
+    assert.equal(find(a, "safety").length, 0);
   });
 });

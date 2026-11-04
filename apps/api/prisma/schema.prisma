@@ -29,6 +29,16 @@ model SkinProfile {
   goals         String[]
   climateZone   String?
   monthlyBudget Float?
+  // Deeper onboarding answers. All optional: rows saved by older app builds
+  // simply leave them empty, and every rule treats "empty" as "unknown".
+  sensitiveSkin     String?   // rarely | sometimes | often
+  acneType          String?   // occasional | hormonal | cystic | blackheads
+  skinTone          Int?      // 1-6 (Fitzpatrick scale)
+  ageRange          String?
+  specialSituations String[]  @default([]) // pregnant, breastfeeding, isotretinoin... (optional, sensitive)
+  avoidIngredients  String[]  @default([]) // ingredients the person typed in
+  profileVersion    Int       @default(1)
+  completedSections String[]  @default([]) // skin | safety | you
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

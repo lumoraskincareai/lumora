@@ -17,6 +17,7 @@
 
 import { CONCERN_DEFS, ConcernKey } from "./skinConcerns";
 import type { ConcernScore } from "./faceAnalysis";
+import type { WebProfileContext } from "./skinProfile";
 
 const MODELS = [
   ...new Set([
@@ -45,12 +46,14 @@ export interface WebSearchResult {
   concerns: { key: string; products: WebProduct[] }[];
 }
 
-interface SearchInput {
+export interface SearchInput {
   concerns: ConcernScore[];
   skinType: string | null;
   sensitivities: string[];
   budget: number | null;
   ownedNames: string[];
+  /** Allowlisted extras from the deeper onboarding (see webProfileContext). Optional. */
+  context?: WebProfileContext | null;
 }
 
 const RESPONSE_SCHEMA = {
@@ -84,11 +87,21 @@ const RESPONSE_SCHEMA = {
   required: ["concerns"],
 };
 
-function buildPrompt(input: SearchInput) {
+export function buildPrompt(input: SearchInput) {
   const concernLines = input.concerns
     .map((c) => `- key "${c.key}": ${CONCERN_DEFS[c.key as ConcernKey].label} (severity ${Math.round(c.score)}/100)`)
     .join("\n");
   const sensitivities = input.sensitivities.filter((s) => !/none/i.test(s));
+  // Only fixed labels and already-sanitised ingredient names get in here; a
+  // health answer such as pregnancy is shared only as "avoid retinoids".
+  const ctx = input.context;
+  const extraLines = [
+    ctx?.skinTone ? `Skin tone: ${ctx.skinTone}` : "",
+    ctx?.ageRange ? `Age range: ${ctx.ageRange}` : "",
+    ctx?.sensitiveSkin ? "Skin reacts easily: yes, so prefer gentle, fragrance-free formulas" : "",
+    ctx?.avoidIngredients.length ? `Also avoid these ingredients: ${ctx.avoidIngredients.join(", ")}` : "",
+    ctx?.avoidRetinoids ? "Do not suggest any retinoid (retinol, retinal, tretinoin, adapalene)" : "",
+  ].filter(Boolean);
 
   return `You are a skincare advisor for an app in India. Suggest real, currently sold skincare products for this person.
 
@@ -97,7 +110,7 @@ ${concernLines}
 
 Skin type: ${input.skinType ?? "unknown"}
 Sensitivities to avoid: ${sensitivities.length ? sensitivities.join(", ") : "none"}
-Monthly skincare budget: ${input.budget != null ? `₹${input.budget} in total across all products` : "not set"}
+${extraLines.map((line) => `${line}\n`).join("")}Monthly skincare budget: ${input.budget != null ? `₹${input.budget} in total across all products` : "not set"}
 Products they already own (do not suggest these): ${input.ownedNames.length ? input.ownedNames.join(", ") : "none"}
 
 Rules:
@@ -106,7 +119,7 @@ Rules:
 ${input.budget != null ? `- Every product must cost well under ₹${input.budget}; prefer options that let several products fit in that total.` : ""}
 - Prefer well-known, dermatologist-trusted formulations with a clear active ingredient for that concern.
 - "why" is one short sentence, specific to this concern and skin type.
-- Never include products containing ingredients the person is sensitive to.
+- Never include products containing ingredients the person is sensitive to or asked to avoid.
 
 Respond ONLY with JSON in this exact shape, no markdown:
 {"concerns":[{"key":"<concern key>","products":[{"name":"","brand":"","approxPriceInr":0,"keyIngredient":"","why":""}]}]}`;

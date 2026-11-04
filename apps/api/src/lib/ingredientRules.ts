@@ -14,6 +14,8 @@ export const SENSITIVITY_INGREDIENTS: Record<string, string[]> = {
   fragrance: ["fragrance", "parfum", "perfume", "linalool", "limonene", "citronellol", "geraniol", "eugenol", "coumarin", "hexyl cinnamal", "benzyl salicylate"],
   alcohol: ["alcohol denat", "denatured alcohol", "sd alcohol", "ethanol", "isopropyl alcohol", "ethyl alcohol"],
   sulfates: ["sodium lauryl sulfate", "sodium laureth sulfate", "ammonium lauryl sulfate", "ammonium laureth sulfate", "sodium coco sulfate", "sulphate"],
+  parabens: ["methylparaben", "ethylparaben", "propylparaben", "butylparaben", "isobutylparaben"],
+  silicones: ["dimethicone", "cyclopentasiloxane", "cyclohexasiloxane", "cyclomethicone", "amodimethicone", "dimethiconol", "siloxane"],
   "essential oils": ["essential oil", "tea tree", "melaleuca", "lavender oil", "lavandula", "eucalyptus", "peppermint", "mentha", "citrus", "lemon peel oil", "orange peel oil", "bergamot", "rosemary leaf oil"],
 };
 
@@ -32,6 +34,11 @@ export const ACTIVES: Record<string, string[]> = {
   ceramides: ["ceramide"],
   "sunscreen filters": ["zinc oxide", "titanium dioxide", "avobenzone", "butyl methoxydibenzoylmethane", "octocrylene", "ethylhexyl methoxycinnamate", "octinoxate", "bemotrizinol", "bis-ethylhexyloxyphenol", "uvinul", "tinosorb"],
 };
+
+// Retinoids to steer away from when someone is pregnant, breastfeeding or on
+// isotretinoin or a prescription retinoid. Bakuchiol is left out on purpose:
+// it is a plant ingredient marketed as a retinol alternative, not a retinoid.
+export const RETINOIDS_TO_AVOID = ["retinol", "retinal", "retinaldehyde", "retinyl", "retinoic acid", "tretinoin", "isotretinoin", "adapalene", "tazarotene"];
 
 // Pairs that irritate when layered in the same routine.
 export const ACTIVE_CLASHES: [string, string, string][] = [
