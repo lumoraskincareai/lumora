@@ -7,6 +7,12 @@ export interface AuthResponse {
   user: { id: string; email: string; name: string; isPremium?: boolean; avatarUrl?: string | null }
 }
 
+/** Sign-up no longer logs you in: you must confirm the emailed code first. */
+export interface SignupResponse {
+  needsVerification: true
+  email: string
+}
+
 export interface GoogleAuthResponse extends AuthResponse {
   isNewUser: boolean
 }
@@ -16,7 +22,18 @@ export function loginUser(data: LoginInput) {
 }
 
 export function signupUser(data: SignupInput) {
-  return apiFetch<AuthResponse>('/auth/signup', { method: 'POST', body: JSON.stringify(data) })
+  return apiFetch<SignupResponse>('/auth/signup', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function verifyEmail(data: { email: string; code: string }) {
+  return apiFetch<AuthResponse>('/auth/verify-email', { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function resendVerification(email: string) {
+  return apiFetch<{ message: string }>('/auth/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
 }
 
 export function googleAuth(idToken: string) {

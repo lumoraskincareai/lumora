@@ -1,10 +1,29 @@
 import { router } from "expo-router";
 import { useAuthStore } from "../store/useAuthStore";
 
+// Tolerate the usual .env slips: stray spaces, wrapping quotes, trailing slashes.
+// Any of those turns `${API_URL}${path}` into an invalid URL and makes fetch
+// throw "Failed to execute 'fetch' on 'Window'".
 export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+  (process.env.EXPO_PUBLIC_API_URL ?? "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .trim()
+    .replace(/\/+$/, "") || "http://localhost:4000";
 
 const SESSION_EXPIRED = "Your session has expired. Please log in again";
+
+/** An Error that also carries the HTTP status and the API's JSON body (e.g. `needsVerification`). */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public data: Record<string, unknown> | null,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 
 // One refresh at a time: when several requests hit a 401 together they all
 // wait on the same refresh instead of each spending the refresh token.
@@ -80,8 +99,10 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new Error(
+    throw new ApiError(
       data?.error || data?.message || `Request failed (${res.status})`,
+      res.status,
+      data && typeof data === "object" ? data : null,
     );
   }
 

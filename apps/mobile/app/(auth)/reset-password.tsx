@@ -180,7 +180,7 @@ export default function ResetPasswordScreen() {
                   backgroundColor: theme.background,
                   color: theme.foreground,
                 }}
-                placeholder="At least 6 characters"
+                placeholder="8+ characters, a letter and a number"
                 placeholderTextColor={theme.muted}
                 secureTextEntry
                 onBlur={onBlur}

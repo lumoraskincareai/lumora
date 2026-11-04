@@ -13,32 +13,65 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Toast from "react-native-toast-message";
 import { signupSchema, SignupInput } from "../../src/lib/validation/auth";
 import { signupUser } from "../../src/api/auth";
-import { useAuthStore } from "../../src/store/useAuthStore";
 import { useTheme } from "../../src/theme/ThemeContext";
 import { useGoogleSignIn } from "../../src/lib/useGoogleSignIn";
 import { GoogleIcon } from "../../components/ui/GoogleIcon";
+import { PasswordInput } from "../../components/ui/PasswordInput";
+import { PasswordStrength } from "../../components/PasswordStrength";
+
+const ERROR_COLOR = "#EF4444";
+
+function FieldLabel({ children }: { children: string }) {
+  const { theme } = useTheme();
+  return (
+    <Text
+      className="text-sm font-medium mb-1.5 mt-3.5"
+      style={{ color: theme.foreground }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <Text
+      className="text-[13px] mt-1 ml-0.5"
+      style={{ color: ERROR_COLOR }}
+      accessibilityRole="alert"
+    >
+      {message}
+    </Text>
+  );
+}
 
 export default function SignupScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const setAuth = useAuthStore((state) => state.setAuth);
   const { signInWithGoogle, isLoading: isGoogleLoading } = useGoogleSignIn();
 
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
-    mode: "onChange",
+    mode: "onTouched",
+    defaultValues: { name: "", email: "", password: "" },
   });
+
+  const password = watch("password");
 
   const onSubmit = async (data: SignupInput) => {
     try {
       const response = await signupUser(data);
-      await setAuth(response.user, response.accessToken, response.refreshToken);
-      Toast.show({ type: "success", text1: "Welcome to Lumora!" });
-      router.replace("/(onboarding)/skin-type");
+      Toast.show({ type: "success", text1: "We sent you a verification code" });
+      router.replace({
+        pathname: "/(auth)/verify-email",
+        params: { email: response.email },
+      });
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -46,6 +79,15 @@ export default function SignupScreen() {
       });
     }
   };
+
+  const inputStyle = (hasError: boolean) => ({
+    borderWidth: 1,
+    borderColor: hasError ? ERROR_COLOR : theme.border,
+    backgroundColor: theme.background,
+    color: theme.foreground,
+  });
+
+  const disabled = !isValid || isSubmitting;
 
   return (
     <KeyboardAvoidingView
@@ -80,6 +122,7 @@ export default function SignupScreen() {
         <Text
           className="text-2xl font-bold text-center"
           style={{ color: theme.foreground }}
+          accessibilityRole="header"
         >
           Create your account
         </Text>
@@ -107,6 +150,8 @@ export default function SignupScreen() {
             }}
             onPress={signInWithGoogle}
             disabled={isGoogleLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
           >
             <GoogleIcon size={18} />
             <Text
@@ -117,13 +162,13 @@ export default function SignupScreen() {
             </Text>
           </Pressable>
 
-          <View className="flex-row items-center mb-4">
+          <View className="flex-row items-center mb-1">
             <View
               className="flex-1 h-px"
               style={{ backgroundColor: theme.border }}
             />
             <Text className="mx-2.5 text-xs" style={{ color: theme.muted }}>
-              or
+              or sign up with email
             </Text>
             <View
               className="flex-1 h-px"
@@ -131,124 +176,95 @@ export default function SignupScreen() {
             />
           </View>
 
-          <Text
-            className="text-sm font-medium mb-1.5"
-            style={{ color: theme.foreground }}
-          >
-            Name
-          </Text>
+          <FieldLabel>Name</FieldLabel>
           <Controller
             control={control}
             name="name"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 className="rounded-xl px-3.5 py-3 text-[15px]"
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                  color: theme.foreground,
-                }}
+                style={inputStyle(!!errors.name)}
                 placeholder="Your name"
                 placeholderTextColor={theme.muted}
+                autoCapitalize="words"
+                autoComplete="name"
+                textContentType="name"
+                returnKeyType="next"
+                accessibilityLabel="Name"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
             )}
           />
-          {errors.name && (
-            <Text
-              className="text-[14px] mt-1 ml-0.5"
-              style={{ color: "#EF4444" }}
-            >
-              {errors.name.message}
-            </Text>
-          )}
+          <FieldError message={errors.name?.message} />
 
-          <Text
-            className="text-sm font-medium mb-1.5 mt-3.5"
-            style={{ color: theme.foreground }}
-          >
-            Email
-          </Text>
+          <FieldLabel>Email</FieldLabel>
           <Controller
             control={control}
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 className="rounded-xl px-3.5 py-3 text-[15px]"
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                  color: theme.foreground,
-                }}
+                style={inputStyle(!!errors.email)}
                 placeholder="you@example.com"
                 placeholderTextColor={theme.muted}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
                 keyboardType="email-address"
+                returnKeyType="next"
+                accessibilityLabel="Email"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
             )}
           />
-          {errors.email && (
-            <Text
-              className="text-[14px] mt-1 ml-0.5"
-              style={{ color: "#EF4444" }}
-            >
-              {errors.email.message}
-            </Text>
-          )}
+          <FieldError message={errors.email?.message} />
 
-          <Text
-            className="text-sm font-medium mb-1.5 mt-3.5"
-            style={{ color: theme.foreground }}
-          >
-            Password
-          </Text>
+          <FieldLabel>Password</FieldLabel>
           <Controller
             control={control}
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                className="rounded-xl px-3.5 py-3 text-[15px]"
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                  color: theme.foreground,
-                }}
-                placeholder="At least 6 characters"
-                placeholderTextColor={theme.muted}
-                secureTextEntry
+              <PasswordInput
+                hasError={!!errors.password}
+                placeholder="Create a password"
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="done"
+                accessibilityLabel="Password"
                 onBlur={onBlur}
                 onChangeText={onChange}
+                onSubmitEditing={disabled ? undefined : handleSubmit(onSubmit)}
                 value={value}
               />
             )}
           />
-          {errors.password && (
-            <Text
-              className="text-[14px] mt-1 ml-0.5"
-              style={{ color: "#EF4444" }}
-            >
-              {errors.password.message}
-            </Text>
+          <PasswordStrength password={password ?? ""} />
+          {/* The checklist above already explains the rules; only surface the
+              schema's message for the cases it doesn't cover (e.g. too long). */}
+          {errors.password?.message === "Password is too long" && (
+            <FieldError message={errors.password.message} />
           )}
 
           <Pressable
             className="rounded-xl py-3.5 items-center mt-6"
             style={{
-              backgroundColor:
-                !isValid || isSubmitting ? theme.primaryLight : theme.primary,
+              backgroundColor: disabled ? theme.primaryLight : theme.primary,
             }}
             onPress={handleSubmit(onSubmit)}
-            disabled={!isValid || isSubmitting}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel="Create account"
+            accessibilityState={{ disabled, busy: isSubmitting }}
           >
-            <Text className="text-white text-[15px] font-semibold">
+            <Text
+              className="text-[15px] font-semibold"
+              style={{ color: disabled ? theme.primary : "#FFFFFF" }}
+            >
               {isSubmitting ? "Creating account..." : "Create account"}
             </Text>
           </Pressable>

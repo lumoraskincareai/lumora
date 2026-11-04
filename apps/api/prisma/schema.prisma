@@ -85,6 +85,12 @@ model User {
   avatarUrl       String?
   resetCodeHash       String?
   resetCodeExpiresAt  DateTime?
+  // Email verification (one-time code sent at sign-up). Null emailVerifiedAt = not verified yet.
+  emailVerifiedAt      DateTime?
+  emailVerifyCodeHash  String?
+  emailVerifyExpiresAt DateTime?
+  emailVerifyAttempts  Int       @default(0)
+  emailVerifySentAt    DateTime?
   createdAt       DateTime         @default(now())
   pushToken       String?
   isPremium       Boolean          @default(false)

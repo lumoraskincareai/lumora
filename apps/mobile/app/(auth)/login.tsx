@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Toast from "react-native-toast-message";
 import { loginSchema, LoginInput } from "../../src/lib/validation/auth";
 import { loginUser } from "../../src/api/auth";
+import { ApiError } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/useAuthStore";
 import { useTheme } from "../../src/theme/ThemeContext";
 import { useGoogleSignIn } from "../../src/lib/useGoogleSignIn";
@@ -40,6 +41,15 @@ export default function LoginScreen() {
       Toast.show({ type: "success", text1: "Welcome back!" });
       router.replace("/(main)/(tabs)/home");
     } catch (err: any) {
+      // The password was right but the email was never verified: the API has
+      // just sent a fresh code, so take the person to enter it.
+      if (err instanceof ApiError && err.data?.needsVerification) {
+        router.push({
+          pathname: "/(auth)/verify-email",
+          params: { email: String(err.data.email ?? data.email) },
+        });
+        return;
+      }
       Toast.show({
         type: "error",
         text1: err.message || "Invalid email or password",
