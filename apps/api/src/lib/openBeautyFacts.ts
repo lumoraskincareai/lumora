@@ -124,15 +124,13 @@ function toDraft(p: any): ProductDraft | null {
 }
 
 async function getJson(url: string) {
-  console.log(`[OBF] GET ${url}`);
   let res: Response;
   try {
     res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch (err) {
-    console.log(`[OBF] request failed:`, err);
+    console.warn(`[OBF] request failed:`, (err as Error).message);
     throw err;
   }
-  console.log(`[OBF] status ${res.status}`);
   // An unknown barcode comes back as HTTP 404 with a normal JSON body
   // ({ status: 0, status_verbose: "product not found" }), so a 404 is an
   // answer, not a failure.
@@ -143,15 +141,9 @@ async function getJson(url: string) {
 export async function lookupBarcode(code: string): Promise<ProductDraft | null> {
   for (const variant of barcodeVariants(code)) {
     const data = await getJson(`${BASE}/api/v2/product/${encodeURIComponent(variant)}.json?fields=${FIELDS}`);
-    console.log(`[OBF] raw response:`, JSON.stringify(data, null, 2));
-    if (data?.status !== 1) {
-      console.log(`[OBF] barcode ${variant} not found`);
-      continue;
-    }
+    if (data?.status !== 1) continue;
     // Keep the barcode as scanned, so it matches what the phone reads next time.
-    const draft = toDraft({ ...data.product, code });
-    console.log(`[OBF] parsed draft:`, JSON.stringify(draft, null, 2));
-    return draft;
+    return toDraft({ ...data.product, code });
   }
   return null;
 }
@@ -168,6 +160,5 @@ export async function searchProducts(query: string): Promise<ProductDraft[]> {
   const data = await getJson(`${BASE}/cgi/search.pl?${params}`);
   const products: any[] = Array.isArray(data?.products) ? data.products : [];
   const drafts = products.map(toDraft).filter((d): d is ProductDraft => d != null);
-  console.log(`[OBF] search "${query}": ${products.length} results, ${drafts.length} usable`);
   return drafts;
 }

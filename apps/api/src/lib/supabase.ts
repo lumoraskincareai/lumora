@@ -10,7 +10,7 @@
 //
 // Install: npm install @supabase/supabase-js
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 
 const requiredEnv = [
@@ -29,10 +29,17 @@ for (const key of requiredEnv) {
 // service role bypasses Row Level Security so the backend can upload
 // and delete files on behalf of any authenticated user — this client
 // must never be exposed to the frontend.
-export const supabase = createClient(
-  process.env.SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-);
+// Created lazily so the API still boots without Supabase configured
+// (storage is optional); only uploads fail, with a clear error.
+let client: SupabaseClient | null = null;
+
+function getClient(): SupabaseClient | null {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  client ??= createClient(url, key);
+  return client;
+}
 
 const BUCKET = process.env.SUPABASE_BUCKET_NAME || "post-images";
 
@@ -45,6 +52,8 @@ export async function uploadImageToSupabase(
   mimeType: string,
   userId: string,
 ): Promise<string> {
+  const supabase = getClient();
+  if (!supabase) throw new Error("Image storage is not configured");
   const ext = mimeType.split("/")[1] || "jpg";
   const path = `posts/${userId}/${randomUUID()}.${ext}`;
 
@@ -70,6 +79,8 @@ export async function uploadImageToSupabase(
  */
 export async function deleteImagesFromSupabase(urls: string[]): Promise<void> {
   if (!urls || urls.length === 0) return;
+  const supabase = getClient();
+  if (!supabase) return;
 
   // Supabase public URLs look like:
   // https://{project}.supabase.co/storage/v1/object/public/{bucket}/{path}

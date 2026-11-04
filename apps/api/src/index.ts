@@ -21,6 +21,7 @@ import uploadsRouter from "./routes/uploads";
 import bountiesRouter from "./routes/bounties";
 import faceScanRouter from "./routes/faceScan";
 import adminRouter from "./routes/admin";
+import { warmUpDatabase } from "./lib/prisma";
 
 const app = express();
 app.use(cors());
@@ -52,4 +53,5 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+void warmUpDatabase()
 startStreakReminderJob()
