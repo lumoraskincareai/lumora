@@ -34,7 +34,7 @@ Put these in `.env`. Everything except the database and JWT secrets is optional,
 | `PORT` | Listen port | 4000 |
 | `TZ` | Server timezone for the 8 pm streak reminder and "checked in today" | `Asia/Kolkata` for the cron; `startOfDay` uses the host timezone |
 | `GOOGLE_WEB_CLIENT_ID` | Verifying Google ID tokens. Must equal the app's `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google sign-in fails |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Password-reset emails. `EMAIL_FROM` must be on a domain verified in Resend (e.g. `Lumora <hello@getlumora.site>`) | Reset code is logged to the console; without `EMAIL_FROM`, sends from `onboarding@resend.dev` (delivers only to the Resend account owner) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Password-reset and email-verification emails. `EMAIL_FROM` must be on a domain verified in Resend (e.g. `Lumora <hello@getlumora.site>`) | The code is logged to the console (reset and verification); without `EMAIL_FROM`, sends from `onboarding@resend.dev` (delivers only to the Resend account owner) |
 | `EMAIL_REPLY_TO` | Reply-to address on those emails (e.g. the Zoho inbox `hello@getlumora.site`) | No reply-to |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET_NAME` | Image uploads | Uploads fail |
 | `GEMINI_API_KEY` | Face-scan analysis and "from the web" product suggestions | Heuristic face analysis; no web suggestions |
@@ -46,7 +46,7 @@ Put these in `.env`. Everything except the database and JWT secrets is optional,
 
 | Mount | What it does |
 | --- | --- |
-| `/auth` | signup, login, Google, token refresh, forgot/reset password |
+| `/auth` | signup (emails a verification code), verify-email, resend-verification, login, Google, token refresh, forgot/reset password |
 | `/users` | me, update me, public profile, push token |
 | `/skin-profile` | onboarding profile, budget |
 | `/products` | catalog, barcode lookup, popular, verdict with match %, photo-scan match, AI identify (`POST /products/identify`) |

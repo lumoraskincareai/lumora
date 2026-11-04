@@ -45,9 +45,9 @@ Deeper docs: [apps/mobile/docs/ARCHITECTURE.md](../apps/mobile/docs/ARCHITECTURE
 ### Security
 
 - Secrets only in `.env` (git-ignored). `.env.example` lists every variable without values. AI keys exist only on the backend; the app gets no `EXPO_PUBLIC_` AI key.
-- bcrypt password hashes. JWT auth on every user route. Writes are scoped to `req.userId`, so users can't touch each other's rows. Admin is an email allowlist.
+- bcrypt password hashes (cost 12), with server-side rules for new passwords. New accounts must verify their email with a one-time code before they get tokens. JWT auth on every user route. Writes are scoped to `req.userId`, so users can't touch each other's rows. Admin is an email allowlist.
 - Google sign-in verifies the ID token's audience, and refuses unverified emails before linking to an existing account.
-- Public user objects only expose `id`/`name`. Password-reset codes are hashed and expire.
+- Public user objects only expose `id`/`name`. Password-reset and email-verification codes are hashed and expire; verification codes also lock after 5 wrong tries.
 - AI output is treated as untrusted input: scores are coerced and clamped to 0–100, boxes to 0–1000, text is length-capped, and `detected` is derived from the score. AI product lookups with fewer than 3 ingredients are rejected.
 
 ## Lessons learned

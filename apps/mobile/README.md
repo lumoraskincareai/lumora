@@ -10,7 +10,7 @@ A skincare companion app built with **Expo (SDK 54)** and **expo-router**. Lumor
 
 | Area | What it does |
 | --- | --- |
-| **Auth** | Email/password login and signup, Google sign-in, forgot/reset password by emailed code; tokens stored in `expo-secure-store` |
+| **Auth** | Email/password login and signup with an emailed verification code, a password strength checklist, Google sign-in, forgot/reset password by emailed code; tokens stored in `expo-secure-store` |
 | **Onboarding** | Four steps — skin type, concerns, sensitivities, goals — saved as a skin profile |
 | **Daily brief** (`home`) | Rule-based "Today's brief" from UV, air quality, humidity, scans, check-ins and your shelf; mood check-in with optional photo; streak tracking |
 | **Journal** | Check-in history with photos and notes. Free tier keeps photos on the device; premium uploads them |
@@ -101,7 +101,7 @@ Fonts are embedded at build time rather than loaded at runtime, so a fresh clone
 
 ```
 app/                  expo-router routes (see docs/ARCHITECTURE.md)
-  (auth)/             login, signup, forgot-password, reset-password
+  (auth)/             login, signup, verify-email, forgot-password, reset-password
   (onboarding)/       skin-type, concerns, sensitivities, goals
   (main)/             authenticated app (detail screens, scanners, journal, admin/)
     (tabs)/           home, explore, community, profile, routine

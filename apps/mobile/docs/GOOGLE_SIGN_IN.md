@@ -44,7 +44,11 @@ Google Cloud Console → project `407133480571` → APIs & Services → Credenti
 
 ## Note on `google-services.json`
 
-That file belongs to Firebase project `lumora-305bd` and is used for **push notifications** (FCM). Google Sign-In doesn't read it here: sign-in is driven entirely by the web client ID above. Don't add Firebase OAuth clients expecting them to fix sign-in unless you also move the web client to that project.
+The file is git-ignored. Locally it sits at `apps/mobile/google-services.json`; on EAS it comes from the file secret `GOOGLE_SERVICES_JSON`, which [app.config.js](../app.config.js) reads. It belongs to Firebase project `lumora-305bd` and is used for **push notifications** (FCM). Google Sign-In doesn't read it here: sign-in is driven entirely by the web client ID above. Don't add Firebase OAuth clients expecting them to fix sign-in unless you also move the web client to that project.
+
+## Moving to a different Google account
+
+Everything above lives in one Google Cloud project, so changing accounts means redoing it, not editing it: create a new Cloud project, the OAuth consent screen and a **Web** client; put its ID in both `GOOGLE_WEB_CLIENT_ID` (API) and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (app); build once on the new EAS account, read the new keystore's SHA-1 (`npx eas-cli credentials -p android`) and register an **Android** client with it; replace `google-services.json` (a new Firebase project) in the EAS file secret `GOOGLE_SERVICES_JSON`. The SHA-1 in the table above belongs to the old keystore and stops applying once builds come from another EAS account. Email/password sign-up needs none of this.
 
 ## Before launch
 

@@ -32,7 +32,7 @@ Keep route files thin. Anything with rules or scoring belongs in `src/lib/` (see
 - **Errors**: `return res.status(code).json({ error: 'Human readable message' })`. The app shows `error` directly in a toast, so write it for users. Always `{ error }`, never `{ message }` or a bare string.
 - **Auth**: protect routes with `requireAuth` and read the user from `req.userId!`. Admin routes use `requireAdmin`. Never trust a `userId` from the body or query.
 - **Ownership**: on update or delete, scope the query to `req.userId` (for example `where: { id, userId: req.userId! }`) so users can't touch each other's rows.
-- **Selects**: when including `user`, select only public fields (`id`, `name`). Never return `passwordHash`, reset codes or push tokens.
+- **Selects**: when including `user`, select only public fields (`id`, `name`). Never return `passwordHash`, reset or verification codes or push tokens.
 - **Bounties**: award with `awardBounty(userId, key)` from `src/lib/bounties.ts` using the stable `key`. Don't write to bounty tables directly.
 - **Env**: read `process.env.X` where it is used, and degrade gracefully when an optional key is missing (see the table in the README). Add every new variable to that table.
 - **Style**: match the file you're in. Quote style and semicolons vary between files. Don't reformat files you aren't otherwise changing.
@@ -54,6 +54,7 @@ Gemini is used only in `src/lib/geminiVision.ts` (face scan), `src/lib/webProduc
 - Never edit or delete a migration that has already been applied. Add a new one.
 - **Never** run `prisma migrate reset`, `prisma db push --force-reset`, `DROP`/`TRUNCATE`, or a seed against the hosted DB without explicit permission.
 - Adding a required column to a table with rows needs a default or a backfill in the same migration.
+- Neon scales an idle database to zero, so the first query after a pause can fail with "Can't reach database server". `src/lib/prisma.ts` retries those connection failures (up to three times) and `index.ts` wakes the database at startup. Keep using that shared client.
 
 ## 6. Do not
 

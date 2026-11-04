@@ -31,7 +31,7 @@ File-based, with `typedRoutes` enabled in [app.json](../app.json) — route stri
 | Group | Purpose |
 | --- | --- |
 | `app/index.tsx` | Entry gate. Calls `loadAuth()`, then redirects to `(main)/(tabs)/home` or `(auth)/login`. Renders `null` while checking. |
-| `app/(auth)/` | `login`, `signup`, `forgot-password` → `reset-password` (6-digit emailed code) |
+| `app/(auth)/` | `login`, `signup` → `verify-email` (6-digit emailed code; a successful verification logs the user in), `forgot-password` → `reset-password` (6-digit emailed code) |
 | `app/(onboarding)/` | `skin-type` → `concerns` → `sensitivities` → `goals`; the last step saves the profile |
 | `app/(main)/` | Everything post-auth. Stack with headers hidden. |
 | `app/(main)/(tabs)/` | Bottom tab bar |
@@ -90,13 +90,13 @@ Every network call goes through [src/api/client.ts](../src/api/client.ts):
 apiFetch<T>(path, options?): Promise<T>
 ```
 
-It resolves `API_URL` from `EXPO_PUBLIC_API_URL`, reads the token straight off the store with `useAuthStore.getState()` (not a hook — so it is callable outside React), sets `Authorization: Bearer …` when present, skips `Content-Type` for `FormData` bodies so the boundary is set correctly, reads the body as text and parses it as JSON only if it is non-empty and parseable, then throws `new Error(data.error ?? data.message ?? "Request failed (<status>)")` on a non-2xx response.
+It resolves `API_URL` from `EXPO_PUBLIC_API_URL` (trimmed, with wrapping quotes and trailing slashes removed; `http://localhost:4000` if unset), reads the token straight off the store with `useAuthStore.getState()` (not a hook — so it is callable outside React), sets `Authorization: Bearer …` when present, skips `Content-Type` for `FormData` bodies so the boundary is set correctly, reads the body as text and parses it as JSON only if it is non-empty and parseable, then throws `new ApiError(data.error ?? data.message ?? "Request failed (<status>)", status, data)` on a non-2xx response. On a 401 with a stored token it refreshes the access token once (one shared in-flight refresh) and retries.
 
 Consequences worth remembering:
 
-- **Errors are plain `Error`s.** No status code, no typed error body. Screens catch and show a toast.
+- **Errors are `ApiError`s** (a subclass of `Error`) carrying `status` and the JSON body as `data`. Most screens just show `err.message` in a toast; the login screen reads `err.data.needsVerification` to send an unverified user to the code screen.
 - **A 204 or empty body resolves to `null`.** Callers that declare a non-nullable `T` for a no-content endpoint are lying to themselves.
-- **No refresh flow.** A `refreshToken` is stored at login but never used; an expired access token surfaces as an ordinary error and the user has to log in again.
+- **Sessions refresh themselves.** The 15-minute access token is renewed through `POST /auth/refresh`; the user is logged out only when the refresh token is invalid.
 
 ### Resource modules
 
@@ -105,7 +105,7 @@ One file per resource in `src/api/`, each exporting thin typed functions:
 | Module | Endpoints |
 | --- | --- |
 | `admin.ts` | `/admin/categories`, `/admin/products` (CRUD), `/admin/lookup/barcode/:code`, `/admin/lookup/search?q=` |
-| `auth.ts` | `POST /auth/login`, `/auth/signup`, `/auth/google`, `/auth/forgot-password`, `/auth/reset-password` |
+| `auth.ts` | `POST /auth/login`, `/auth/signup` (returns `{ needsVerification, email }`, no tokens), `/auth/verify-email`, `/auth/resend-verification`, `/auth/google`, `/auth/forgot-password`, `/auth/reset-password` |
 | `bounties.ts` | `/bounties` |
 | `checkins.ts` | `/checkins` (create, `PATCH`/`DELETE /:id`), `/checkins/today`, `/checkins/history`, `/checkins/stats`, `/checkins/streak` |
 | `faceScan.ts` | `POST /face-scan/analyze`, `/face-scan/latest` |
@@ -195,7 +195,7 @@ Embedded weights are 400, 500, 600, 700, 800. A `fontWeight` outside that set fa
 ## 8. Conventions
 
 - **Text** always comes from `components/ui/Text`, never `react-native`.
-- **Screens** are default exports named `XxxScreen`; **components** are named exports in PascalCase files. `components/ui/` holds primitives (`Button`, `Card`, `Badge`); the older lowercase-hyphen files (`themed-text.tsx`, `parallax-scroll-view.tsx`) are template remnants.
+- **Screens** are default exports named `XxxScreen`; **components** are named exports in PascalCase files. `components/ui/` holds primitives (`Card`, `GoogleIcon`, `PasswordInput`, `Text`).
 - **Imports are relative** (`../../../src/api/posts`) — no path alias is configured. Deep screens carry long prefixes.
 - **Validation** lives in `src/lib/validation/` as Zod schemas with inferred input types, wired to React Hook Form via `@hookform/resolvers`.
 - **Feedback** is `react-native-toast-message`, rendered once in the root layout.
