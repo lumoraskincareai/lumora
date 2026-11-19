@@ -1,0 +1,13 @@
+# One command starts the whole backend:  docker compose up --build
+# Secrets come from apps/api/.env (never baked into the image).
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: apps/api/.env
+    environment:
+      PORT: 4000          # overrides whatever PORT is in .env, so the mapping below always holds
+    ports:
+      - "4000:4000"
+    restart: unless-stopped

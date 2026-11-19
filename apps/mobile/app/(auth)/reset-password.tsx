@@ -49,7 +49,7 @@ export default function ResetPasswordScreen() {
       });
       await setAuth(response.user, response.accessToken, response.refreshToken);
       Toast.show({ type: "success", text1: "Password updated!" });
-      router.replace("/(main)/(tabs)/home");
+      router.replace("/");
     } catch (err: any) {
       Toast.show({
         type: "error",

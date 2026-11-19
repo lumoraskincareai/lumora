@@ -116,3 +116,24 @@ export function submitRecommendationFeedback(
     body: JSON.stringify({ helpful }),
   });
 }
+
+export interface ProfileSuggestionArea {
+  key: string;
+  label: string;
+  reason: string;
+  items: SuggestedItem[];
+  tips: string[];
+  emptyReason: string | null;
+}
+
+export interface ProfileSuggestionsResponse {
+  basedOn: string[];
+  budget: number | null;
+  areas: ProfileSuggestionArea[];
+  plan: { total: number; productCount: number };
+}
+
+// Rule-based suggestions from the onboarding answers alone (no face scan).
+export function getProfileSuggestions() {
+  return apiFetch<ProfileSuggestionsResponse>("/recommendations/for-you");
+}

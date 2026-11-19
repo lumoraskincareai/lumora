@@ -39,7 +39,8 @@ export default function LoginScreen() {
       const response = await loginUser(data);
       await setAuth(response.user, response.accessToken, response.refreshToken);
       Toast.show({ type: "success", text1: "Welcome back!" });
-      router.replace("/(main)/(tabs)/home");
+      // The start screen sends people without a skin profile to onboarding.
+      router.replace("/");
     } catch (err: any) {
       // The password was right but the email was never verified: the API has
       // just sent a fresh code, so take the person to enter it.

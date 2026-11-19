@@ -79,6 +79,11 @@ Lumora is a skincare companion for people who are tired of generic advice. It le
 - **Deliberate limit:** the Gemini prompt receives **no profile** and is told never to guess age, habits or lifestyle.
 - **Tests:** `test/geminiVision.test.ts`, `test/faceAnalysis.test.ts`.
 
+### "Suggested for you" on Home (from onboarding) ✅
+- **Endpoint:** `GET /recommendations/for-you`. **Logic:** `lib/profileSuggestions.ts`. **UI:** `components/ForYouSuggestions.tsx` on the Home tab.
+- **How it works:** rule-based, no scan and no AI. Up to three focus areas come from your ranked concerns, then goals, then skin type (acne type refines acne). Each area shows up to 2 products: one you own first, then catalog matches. Products hitting your sensitivities, avoid-list or a retinoid restriction are dropped; strong actives rank lower for sensitive skin; the monthly budget caps the total. Every item states which answer produced it.
+- **Tests:** `test/profileSuggestions.test.ts`.
+
 ### Product suggestions from a scan ✅
 - **Endpoint:** `GET /recommendations/from-scan?source=owned|promoted|web`. **Logic:** `lib/scanSuggestions.ts`, `lib/webProductSearch.ts`.
 - **How it works:** three sources for your detected concerns: **your shelf** (free, keyword match on products you own), **catalog** (products flagged as promoted rank first as "Featured"; owned ones and ones conflicting with your sensitivities are dropped), and **the web** (Gemini with Google Search grounding; the only call that gets your profile: concerns, skin type, sensitivities, budget, owned products). The monthly budget is treated as a total across all suggestions. Web results are cached on the scan.
@@ -161,6 +166,7 @@ Lumora is a skincare companion for people who are tired of generic advice. It le
 
 | Feature | Why | Depends on | Priority |
 | --- | --- | --- | --- |
+| **Home redesign** (routine-first: time-aware greeting, one climate strip, today's routine with a step checklist, tap-to-check-in mood with a 7-day trend, product pick, last-scan card, tip of the day, your week), plus three "come back" hooks: streak milestones (3, 7, 14, 30 days), a shareable "Your week, wrapped" recap card, and an ingredient of the day | Today's Home buries the brief, shows climate twice and has no inline routine steps | Design approved in the artifact (done); a daily reset for `completedToday`; rename the "Brief" tab to "Home"; the recap needs an on-device image export for sharing; ingredient of the day needs a "saved ingredients" store | **High (designed, build pending)** |
 | Onboarding follow-ups: a dismissible "complete your profile" card on Home, clearing skin tone/age, sun habits, climate, current actives, lifestyle questions | Last 10% of accuracy and nudging existing users | Deeper onboarding (done) | Medium |
 | Use the stored `climateZone` as a weather fallback in the daily brief | The brief returns nothing without location | A climate question | Medium |
 | Rate limiting on login and reset codes | Brute-force protection | A limiter (new dependency) | High |

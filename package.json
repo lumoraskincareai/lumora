@@ -13,7 +13,7 @@
     "start:mobile": "npm start -w lumora-app",
     "android": "npm run android -w lumora-app",
     "typecheck": "npm run typecheck -w lumora-app -w lumora-backend",
-    "test": "npm test -w lumora-backend",
+    "test": "npm test -w lumora-backend -w lumora-app",
     "lint": "npm run lint -w lumora-app",
     "test:guard": "node .claude/hooks/guard.test.cjs",
     "verify": "npm run typecheck && npm test && npm run lint && npm run test:guard"

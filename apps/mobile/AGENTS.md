@@ -70,7 +70,7 @@ Screens are default exports named `XxxScreen`.
 - Edit `.env`, `google-services.json`, `app.json` credentials, or anything under `android/` unless that is the task. `android/` is gitignored and generated.
 - Touch `dist/`, `.expo/`, or `node_modules/`.
 - Re-add `Text.defaultProps` / `TextInput.defaultProps` style hacks. React 19 ignores `defaultProps` on function components and the JSX runtime here never reads them — this was already tried and removed. See [Typography](docs/ARCHITECTURE.md#6-typography).
-- Assume tests exist. There is no test runner configured; verify with `npx tsc --noEmit` and `npm run lint`.
+- Assume screens are tested. `npm test -w lumora-app` (`tsx --test`, `test/`) covers only pure logic in `src/lib` that imports no `react-native`; verify the rest with `npx tsc --noEmit` and `npm run lint`.
 - Claim a change works on device unless it was actually run there.
 
 ## 6. Before finishing

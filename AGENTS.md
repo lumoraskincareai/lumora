@@ -55,11 +55,11 @@ The database in `apps/api/.env` may be a hosted Neon instance with real data. **
 | Scope | Run from the root |
 | --- | --- |
 | everything | `npm run verify` |
-| mobile | `npm run typecheck -w lumora-app && npm run lint` |
+| mobile | `npm run typecheck -w lumora-app && npm test -w lumora-app && npm run lint` |
 | API | `npm run typecheck -w lumora-backend && npm test` |
 | website | open the HTML files; there is nothing to build |
 
-The API has unit tests for `src/lib`; the mobile app has none. Report exactly what you ran and what you didn't. Never claim a change works on a device unless you ran it there.
+The API and the mobile app both have unit tests for `src/lib` logic; mobile screens have none. Report exactly what you ran and what you didn't. Never claim a change works on a device unless you ran it there.
 
 ## 6. AI tooling
 

@@ -12,6 +12,7 @@ import {
   promotedSuggestions,
   SuggestionSource,
 } from "../lib/scanSuggestions";
+import { buildProfileSuggestions } from "../lib/profileSuggestions";
 import { searchWebProducts, WebSearchResult } from "../lib/webProductSearch";
 
 const router = express.Router();
@@ -142,7 +143,18 @@ router.post("/generate", requireAuth, async (req, res) => {
   // of truth for what was shown; feedback reads the pick from there.
   const anchorProductId = brief.pick?.productId ?? catalog[0]?.id;
   if (!anchorProductId) {
-    return res.status(404).json({ error: "No products available" });
+    // Empty catalog: nothing to anchor a saved row to. The brief is still
+    // useful (conditions, tips, owned products), so return it unsaved with an
+    // empty id — the app hides the feedback buttons for it.
+    return res.json(
+      formatRecommendation({
+        id: "",
+        product: null,
+        reason: brief.headline,
+        contextSnapshot: { brief },
+        createdAt: now,
+      }),
+    );
   }
 
   const rec = await prisma.recommendation.create({
@@ -275,6 +287,26 @@ router.get("/from-scan", requireAuth, async (req, res) => {
     ...planned,
     web: { grounded: web.grounded, sources: web.sources, searchedAt: web.generatedAt },
   });
+});
+
+// GET /recommendations/for-you — rule-based suggestions from the onboarding
+// profile alone (no face scan, no AI). See lib/profileSuggestions.ts.
+router.get("/for-you", requireAuth, async (req, res) => {
+  const userId = req.userId!;
+  const [skinProfile, owned, catalog] = await Promise.all([
+    prisma.skinProfile.findUnique({ where: { userId } }),
+    prisma.userProduct.findMany({
+      where: { userId, isFinished: false },
+      include: { product: true },
+    }),
+    prisma.product.findMany(),
+  ]);
+
+  if (!skinProfile) {
+    return res.status(400).json({ error: "Complete your skin assessment first" });
+  }
+
+  res.json(buildProfileSuggestions({ profile: skinProfile, catalog, owned, now: new Date() }));
 });
 
 router.post("/:id/feedback", requireAuth, async (req, res) => {

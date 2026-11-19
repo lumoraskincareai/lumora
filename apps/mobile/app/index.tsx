@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { Redirect } from 'expo-router'
 import { useAuthStore } from '../src/store/useAuthStore'
 import { getMySkinProfile } from '../src/api/skinProfile'
+import { AppLoader } from '../components/AppLoader'
 
 type Target = 'login' | 'onboarding' | 'home' | null
 
@@ -35,5 +36,5 @@ export default function Index() {
   if (target === 'login') return <Redirect href="/(auth)/login" />
   if (target === 'onboarding') return <Redirect href="/(onboarding)/skin-type" />
   if (target === 'home') return <Redirect href="/(main)/(tabs)/home" />
-  return null // or a splash/loading view
+  return <AppLoader />
 }

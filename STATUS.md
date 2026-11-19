@@ -83,6 +83,7 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [ ] **Premium**: the flag exists, but there's no way to purchase or upgrade
 - [ ] **Deploying email verification**: the new signup response has no tokens, so app builds released before this change can't sign up against an API that has it. Release the app with the API, and run `prisma migrate deploy` on the hosted database first
 - [ ] **Move the accounts to Lumora**: the EAS project, Neon database and git remote already use `lumoraskincareai`. The Google Cloud project, Firebase project (`google-services.json`), Android OAuth client and the Resend sender are still the old ones ([Google setup](apps/mobile/docs/GOOGLE_SIGN_IN.md))
+- [ ] **Home redesign**: designed in the design artifact (six boards: morning, scrolled, evening, mood check-in, first day, Midnight theme). Not built yet; it needs a daily reset for routine step check-offs (`completedToday` is never reset) and the tab renamed from "Brief" to "Home"
 - [ ] **Onboarding follow-ups**: a "complete your profile" card on Home, clearing skin tone and age once set, and the stored `climateZone` as a brief fallback
 - [ ] **Run the new migration**: `20261105000000_expand_skin_profile` is committed but must be applied (`prisma migrate deploy`) to each database before the API that uses it is deployed
 - [ ] **Rate limiting**: login and password-reset codes have no request limit yet (verification codes do: 5 tries)

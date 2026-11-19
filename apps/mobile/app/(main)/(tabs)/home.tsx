@@ -16,6 +16,8 @@ import {
   ListChecks,
   ChevronRight,
   ScanFace,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +25,7 @@ import { Card } from "../../../components/ui/Card";
 import { MoodPicker } from "../../../components/MoodPicker";
 import { ImagePickerRow } from "../../../components/ImagePickerRow";
 import { DailyBrief } from "../../../components/DailyBrief";
+import { ForYouSuggestions } from "../../../components/ForYouSuggestions";
 import { useAuthStore } from "../../../src/store/useAuthStore";
 import { useTheme } from "../../../src/theme/ThemeContext";
 import {
@@ -30,6 +33,8 @@ import {
   generateRecommendation,
   submitRecommendationFeedback,
   RecommendationResponse,
+  ProfileSuggestionsResponse,
+  getProfileSuggestions,
 } from "../../../src/api/recommendations";
 import {
   submitCheckIn,
@@ -59,8 +64,11 @@ export default function HomeScreen() {
 
   const [recommendation, setRecommendation] =
     useState<RecommendationResponse | null>(null);
+  const [forYou, setForYou] = useState<ProfileSuggestionsResponse | null>(null);
   const [loadingRec, setLoadingRec] = useState(true);
   const [recError, setRecError] = useState<string | null>(null);
+  // The API's wording when the person hasn't done onboarding yet.
+  const needsAssessment = Boolean(recError?.includes("skin assessment"));
   const [feedbackGiven, setFeedbackGiven] = useState<
     "helpful" | "not_helpful" | null
   >(null);
@@ -113,6 +121,15 @@ export default function HomeScreen() {
       }
     };
 
+    // Built from the onboarding answers only; hidden if it fails.
+    const loadForYou = async () => {
+      try {
+        setForYou(await getProfileSuggestions());
+      } catch {
+        setForYou(null);
+      }
+    };
+
     const loadCheckIn = async () => {
       const [streakData, todayCheckInData, profile] = await Promise.all([
         getStreak(),
@@ -153,6 +170,7 @@ export default function HomeScreen() {
     await Promise.allSettled([
       loadWeather(),
       loadBrief(),
+      loadForYou(),
       loadCheckIn(),
       loadBounties(),
       loadRoutines(),
@@ -645,27 +663,68 @@ export default function HomeScreen() {
           </Card>
         ) : !recommendation ? (
           <Card
-            className="mt-4 p-4 items-center"
+            className="mt-4 px-5 py-7 items-center"
             style={{ backgroundColor: theme.card, borderColor: theme.border }}
           >
-            <Text
-              className="text-sm text-center"
-              style={{ color: theme.muted }}
-            >
-              {recError ?? "Couldn't load today's brief."}
-            </Text>
-            <Pressable
-              onPress={loadAll}
-              className="mt-3 rounded-lg px-4 py-2"
+            <View
+              className="w-12 h-12 rounded-full items-center justify-center mb-3"
               style={{ backgroundColor: theme.primaryLight }}
             >
-              <Text
-                className="text-xs font-medium"
-                style={{ color: theme.primary }}
-              >
-                Retry
-              </Text>
-            </Pressable>
+              <Sparkles size={22} color={theme.primary} />
+            </View>
+            {needsAssessment ? (
+              <>
+                <Text
+                  className="text-base font-semibold text-center"
+                  style={{ color: theme.foreground }}
+                >
+                  Let&apos;s set up your skin profile
+                </Text>
+                <Text
+                  className="text-[13px] text-center mt-1.5 leading-5"
+                  style={{ color: theme.muted }}
+                >
+                  A few quick questions and Lumora will build your daily brief
+                  and product picks around your skin.
+                </Text>
+                <Pressable
+                  onPress={() => router.push("/(onboarding)/skin-type")}
+                  accessibilityRole="button"
+                  className="mt-5 rounded-full px-6 py-3"
+                  style={{ backgroundColor: theme.primary }}
+                >
+                  <Text className="text-sm font-semibold text-white">
+                    Start assessment
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text
+                  className="text-base font-semibold text-center"
+                  style={{ color: theme.foreground }}
+                >
+                  Couldn&apos;t load today&apos;s brief
+                </Text>
+                <Text
+                  className="text-[13px] text-center mt-1.5 leading-5"
+                  style={{ color: theme.muted }}
+                >
+                  {recError ?? "Check your connection and try again."}
+                </Text>
+                <Pressable
+                  onPress={loadAll}
+                  accessibilityRole="button"
+                  className="mt-5 flex-row items-center gap-2 rounded-full px-6 py-3"
+                  style={{ backgroundColor: theme.primary }}
+                >
+                  <RefreshCw size={14} color="#fff" />
+                  <Text className="text-sm font-semibold text-white">
+                    Try again
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </Card>
         ) : (
           <Card
@@ -674,7 +733,7 @@ export default function HomeScreen() {
           >
             <DailyBrief brief={recommendation} />
 
-            {feedbackGiven ? (
+            {!recommendation.id ? null : feedbackGiven ? (
               <View
                 className="mt-4 rounded-lg py-2.5 items-center"
                 style={{ backgroundColor: theme.primaryLight }}
@@ -719,6 +778,10 @@ export default function HomeScreen() {
               </View>
             )}
           </Card>
+        )}
+
+        {forYou && forYou.areas.length > 0 && (
+          <ForYouSuggestions data={forYou} />
         )}
       </View>
     </ScrollView>

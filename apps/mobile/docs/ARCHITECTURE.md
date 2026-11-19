@@ -113,7 +113,7 @@ One file per resource in `src/api/`, each exporting thin typed functions:
 | `ingredients.ts` | `/ingredients`, `/ingredients/:name` |
 | `posts.ts` | `/posts`, `/posts/:id` (get, `DELETE`), `/like`, `/bookmark`, `/report`, `/comments`, `/posts/mine/all`, `/posts/bookmarked/all` |
 | `products.ts` | `/products`, `/products/popular`, `/products/:id`, `/products/:id/verdict`, `/products/barcode/:code`, `/products/barcode/:code/check`, `/products/match`, `/products/identify` |
-| `recommendations.ts` | `/recommendations/latest`, `/generate`, `/from-scan?source=owned\|promoted\|web`, `/:id/feedback` |
+| `recommendations.ts` | `/recommendations/latest`, `/generate`, `/for-you`, `/from-scan?source=owned\|promoted\|web`, `/:id/feedback` |
 | `reviews.ts` | `/reviews` |
 | `routines.ts` | `/routines`, `/routines/me`, `DELETE /routines/:id`, `/routine-steps/:id/log` |
 | `skinProfile.ts` | `/skin-profile`, `/skin-profile/me`, `PATCH /skin-profile/budget` |
@@ -205,5 +205,5 @@ Embedded weights are 400, 500, 600, 700, 800. A `fontWeight` outside that set fa
 ## 9. Known rough edges
 
 - Two `react-hooks/exhaustive-deps` warnings remain, on `app/index.tsx` and `share-review.tsx`.
-- No test setup exists for the app.
+- Tests: `npm test -w lumora-app` runs `tsx --test` on `apps/mobile/test/`. Only pure logic in `src/lib` (no `react-native` imports) is covered; screens are not.
 - The "Shared routines" link in `explore.tsx` is commented out; there is no `shared-routines` screen.
