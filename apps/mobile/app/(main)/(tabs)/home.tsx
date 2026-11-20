@@ -1,31 +1,20 @@
 import React, { useState, useCallback } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
-import { Text, TextInput } from "../../../components/ui/Text";
+import { View, ScrollView, RefreshControl } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { getCurrentLocation } from "../../../src/lib/location";
-import { getCurrentWeather, WeatherData } from "../../../src/api/weather";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  Flame,
-  ThumbsUp,
-  ThumbsDown,
-  Sun,
-  Moon,
-  Award,
-  CheckCircle2,
-  ListChecks,
-  ChevronRight,
-  ScanFace,
-  Sparkles,
-  RefreshCw,
-} from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Card } from "../../../components/ui/Card";
-import { MoodPicker } from "../../../components/MoodPicker";
-import { ImagePickerRow } from "../../../components/ImagePickerRow";
-import { DailyBrief } from "../../../components/DailyBrief";
+import { getCurrentLocation } from "../../../src/lib/location";
+import { getCurrentWeather, WeatherData } from "../../../src/api/weather";
 import { ForYouSuggestions } from "../../../components/ForYouSuggestions";
+import { HomeTop } from "../../../components/home/HomeTop";
+import { ScanHero } from "../../../components/home/ScanHero";
+import { ActionTiles } from "../../../components/home/ActionTiles";
+import { MoodCheckIn } from "../../../components/home/MoodCheckIn";
+import { RoutineBanner } from "../../../components/home/RoutineBanner";
+import { TrendingCommunity } from "../../../components/home/TrendingCommunity";
+import { BriefSection } from "../../../components/home/BriefSection";
+import { BountiesCard } from "../../../components/home/BountiesCard";
 import { useAuthStore } from "../../../src/store/useAuthStore";
 import { useTheme } from "../../../src/theme/ThemeContext";
 import {
@@ -45,6 +34,7 @@ import {
 } from "../../../src/api/checkins";
 import { uploadImages } from "../../../src/api/uploads";
 import { getMyProfile } from "../../../src/api/users";
+import { getPosts, Post } from "../../../src/api/posts";
 import {
   getLocalCheckInPhotos,
   saveLocalCheckInPhotos,
@@ -52,7 +42,7 @@ import {
 } from "../../../src/lib/localCheckInPhotos";
 import { getBounties, Bounty } from "../../../src/api/bounties";
 import { getMyRoutines, Routine } from "../../../src/api/routines";
-import { iconColors } from "../../../src/theme/iconColors";
+import { trendingPosts } from "../../../src/lib/homeCopy";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -86,6 +76,8 @@ export default function HomeScreen() {
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [bountyPoints, setBountyPoints] = useState(0);
   const [routines, setRoutines] = useState<Routine[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { theme } = useTheme();
 
@@ -95,7 +87,7 @@ export default function HomeScreen() {
     setLoadingRec(true);
     setRecError(null);
 
-    // Shared by the weather card and the brief so location is asked once.
+    // Shared by the weather chip and the brief so location is asked once.
     const locationPromise = getCurrentLocation().catch(() => null);
 
     const loadWeather = async () => {
@@ -166,6 +158,10 @@ export default function HomeScreen() {
       setRoutines(await getMyRoutines());
     };
 
+    const loadPosts = async () => {
+      setPosts(trendingPosts(await getPosts()));
+    };
+
     // Everything but the brief is nice-to-have and fails silently.
     await Promise.allSettled([
       loadWeather(),
@@ -174,6 +170,7 @@ export default function HomeScreen() {
       loadCheckIn(),
       loadBounties(),
       loadRoutines(),
+      loadPosts(),
     ]);
   }, [updateUser]);
 
@@ -183,6 +180,12 @@ export default function HomeScreen() {
       setFeedbackGiven(null);
     }, [loadAll]),
   );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadAll();
+    setRefreshing(false);
+  };
 
   const handleFeedback = async (helpful: boolean) => {
     if (!recommendation) return;
@@ -265,525 +268,108 @@ export default function HomeScreen() {
     }
   };
 
+  const photoHelp = useCloudPhotos
+    ? "Add up to 6 progress photos, backed up to your account."
+    : "Add up to 6 progress photos, kept only on this device. Go Premium to back them up.";
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      {/* Gradient header */}
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Soft colour wash behind the top of the screen. */}
       <LinearGradient
-        colors={theme.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: insets.top + 16,
-          paddingBottom: 24,
+        colors={[theme.primaryLight, theme.background]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: 420 }}
+      />
+
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: insets.top + 12,
           paddingHorizontal: 16,
-          borderBottomLeftRadius: 28,
-          borderBottomRightRadius: 28,
+          paddingBottom: 40,
+          gap: 20,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }
       >
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 14,
-                fontWeight: "600",
-              }}
-            >
-              Good morning{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-            </Text>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 30,
-                fontWeight: "900",
-                lineHeight: 34,
-                marginTop: 4,
-              }}
-            >
-              Your AI Beauty Brief
-            </Text>
-          </View>
-          <View className="items-center bg-white/20 rounded-2xl px-3 py-2">
-            <Flame
-              size={18}
-              color="#fff"
-              fill={streak > 0 ? "#fff" : "transparent"}
-            />
-            <Text className="text-white text-sm font-bold mt-0.5">
-              {streak}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+        <HomeTop
+          theme={theme}
+          name={user?.name}
+          streak={streak}
+          weather={weather}
+          onSearch={() => router.push("/(main)/(tabs)/explore")}
+          onStreak={() => router.push("/(main)/my-stats")}
+        />
 
-      <View className="p-4">
-        <Pressable onPress={() => router.push("/(main)/face-scan")}>
-          <LinearGradient
-            colors={theme.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ borderRadius: 20, padding: 16, marginBottom: 16 }}
-            className="flex-row items-center gap-3"
-          >
-            <View
-              className="w-11 h-11 rounded-full items-center justify-center"
-              style={{ backgroundColor: "rgba(255,255,255,0.25)" }}
-            >
-              <ScanFace size={22} color="#fff" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-white font-bold text-[15px]">Scan your face</Text>
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 }}>
-                Spot dark circles, spots & more — free tips in seconds
-              </Text>
-            </View>
-            <ChevronRight size={18} color="#fff" />
-          </LinearGradient>
-        </Pressable>
+        <ScanHero
+          theme={theme}
+          onPress={() => router.push("/(main)/face-scan")}
+        />
 
-        {/* Daily check-in card */}
-        {!checkedInToday ? (
-          <Card
-            className="p-4 mb-4"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <Text
-              className="text-sm font-semibold mb-1"
-              style={{ color: theme.foreground }}
-            >
-              How&apos;s your skin feeling today?
-            </Text>
-            <Text className="text-xs mb-4" style={{ color: theme.muted }}>
-              Quick check-in keeps your streak alive.
-            </Text>
+        <ActionTiles
+          theme={theme}
+          onRoutine={() => router.push("/(main)/(tabs)/routine")}
+          onProductMatch={() => router.push("/(main)/scan-product")}
+          onReview={() => router.push("/(main)/share-review")}
+          onCommunity={() => router.push("/(main)/(tabs)/community")}
+        />
 
-            <MoodPicker value={mood} onChange={setMood} />
+        <MoodCheckIn
+          theme={theme}
+          checkedIn={checkedInToday}
+          streak={streak}
+          todayMood={todayCheckIn?.mood ?? null}
+          mood={mood}
+          onMood={setMood}
+          note={note}
+          onNote={setNote}
+          imageUris={imageUris}
+          onImages={setImageUris}
+          savedImages={savedImages}
+          photoHelp={photoHelp}
+          submitting={submittingCheckIn}
+          savingPhotos={savingPhotos}
+          onSubmit={handleCheckIn}
+          onSavePhotos={handleSavePhotos}
+        />
 
-            {mood !== null && (
-              <>
-                <TextInput
-                  className="rounded-xl px-3.5 py-3 text-sm mt-4"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    backgroundColor: theme.card,
-                    color: theme.foreground,
-                  }}
-                  placeholder="Anything you want to note? (optional)"
-                  placeholderTextColor={theme.muted}
-                  value={note}
-                  onChangeText={setNote}
-                />
-                <ImagePickerRow
-                  uris={imageUris}
-                  onChange={setImageUris}
-                  theme={theme}
-                  label="Skin photos"
-                  helperText={
-                    useCloudPhotos
-                      ? "Add up to 6 progress photos, backed up to your account."
-                      : "Add up to 6 progress photos, kept only on this device. Go Premium to back them up."
-                  }
-                />
-                <Pressable
-                  onPress={handleCheckIn}
-                  disabled={submittingCheckIn}
-                  className="rounded-xl py-3 items-center mt-3"
-                  style={{
-                    backgroundColor: submittingCheckIn
-                      ? theme.primaryLight
-                      : theme.primary,
-                  }}
-                >
-                  <Text className="text-white font-semibold text-sm">
-                    {submittingCheckIn
-                      ? imageUris.length
-                        ? "Uploading photos..."
-                        : "Saving..."
-                      : "Check in"}
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </Card>
-        ) : (
-          <Card
-            className="p-4 mb-4"
-            style={{
-              backgroundColor: theme.primaryLight,
-              borderColor: theme.primary,
-            }}
-          >
-            <Text
-              className="text-sm font-medium text-center"
-              style={{ color: theme.foreground }}
-            >
-              ✓ Checked in today — {streak} day streak!
-            </Text>
+        <BriefSection
+          theme={theme}
+          recommendation={recommendation}
+          loading={loadingRec}
+          error={recError}
+          needsAssessment={needsAssessment}
+          feedbackGiven={feedbackGiven}
+          onFeedback={handleFeedback}
+          onRetry={loadAll}
+          onStartAssessment={() => router.push("/(onboarding)/skin-type")}
+        />
 
-            <ImagePickerRow
-              uris={imageUris}
-              onChange={setImageUris}
-              theme={theme}
-              label="Skin photos"
-              helperText={
-                useCloudPhotos
-                  ? "Add up to 6 progress photos, backed up to your account."
-                  : "Add up to 6 progress photos, kept only on this device. Go Premium to back them up."
-              }
-            />
+        <RoutineBanner
+          theme={theme}
+          routines={routines}
+          onOpen={() => router.push("/(main)/(tabs)/routine")}
+          onCreate={() => router.push("/(main)/routine-builder")}
+        />
 
-            {JSON.stringify(imageUris) !== JSON.stringify(savedImages) && (
-              <Pressable
-                onPress={handleSavePhotos}
-                disabled={savingPhotos}
-                className="rounded-xl py-3 items-center mt-3"
-                style={{
-                  backgroundColor: savingPhotos
-                    ? theme.primaryLight
-                    : theme.primary,
-                }}
-              >
-                <Text className="text-white font-semibold text-sm">
-                  {savingPhotos ? "Saving..." : "Save photos"}
-                </Text>
-              </Pressable>
-            )}
-          </Card>
-        )}
+        <TrendingCommunity
+          theme={theme}
+          posts={posts}
+          onOpen={(id) => router.push(`/(main)/post/${id}`)}
+          onSeeAll={() => router.push("/(main)/(tabs)/community")}
+        />
 
-        {routines.length > 0 && (
-          <Card
-            className="mt-4 p-4"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center gap-2">
-                <View
-                  className="w-8 h-8 rounded-full items-center justify-center"
-                  style={{ backgroundColor: `${iconColors.blue}22` }}
-                >
-                  <ListChecks size={15} color={iconColors.blue} />
-                </View>
-                <Text
-                  className="text-sm font-semibold"
-                  style={{ color: theme.foreground }}
-                >
-                  Your Routines
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push("/(main)/(tabs)/routine")}
-                className="flex-row items-center gap-0.5"
-              >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: theme.primary }}
-                >
-                  View all
-                </Text>
-                <ChevronRight size={14} color={theme.primary} />
-              </Pressable>
-            </View>
+        {forYou && forYou.areas.length > 0 ? <ForYouSuggestions data={forYou} /> : null}
 
-            <View className="gap-2.5">
-              {routines.map((routine) => {
-                const totalSteps = routine.steps.length;
-                const completedSteps = routine.steps.filter(
-                  (s) => s.completed,
-                ).length;
-                const routineColor =
-                  routine.timeOfDay === "morning"
-                    ? iconColors.morning
-                    : iconColors.evening;
-                return (
-                  <Pressable
-                    key={routine.id}
-                    onPress={() => router.push("/(main)/(tabs)/routine")}
-                    className="flex-row items-center gap-2.5 rounded-xl p-3"
-                    style={{
-                      backgroundColor: theme.background,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                    }}
-                  >
-                    <View
-                      className="w-8 h-8 rounded-full items-center justify-center"
-                      style={{ backgroundColor: `${routineColor}22` }}
-                    >
-                      {routine.timeOfDay === "morning" ? (
-                        <Sun size={15} color={routineColor} />
-                      ) : (
-                        <Moon size={15} color={routineColor} />
-                      )}
-                    </View>
-                    <View className="flex-1">
-                      <Text
-                        className="text-sm font-medium"
-                        style={{ color: theme.foreground }}
-                      >
-                        {routine.name}
-                      </Text>
-                      <Text
-                        className="text-xs mt-0.5"
-                        style={{ color: theme.muted }}
-                      >
-                        {completedSteps}/{totalSteps} steps done today
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.muted} />
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Card>
-        )}
-
-        {weather && (
-          <Card
-            className="mt-4 p-4 flex-row items-center justify-between"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <View className="flex-row items-center gap-2">
-              <View
-                className="w-9 h-9 rounded-full items-center justify-center"
-                style={{ backgroundColor: `${iconColors.amber}22` }}
-              >
-                <Sun size={18} color={iconColors.amber} />
-              </View>
-              <View>
-                <Text
-                  className="text-sm font-medium"
-                  style={{ color: theme.foreground }}
-                >
-                  {weather.temp}°C · {weather.condition}
-                </Text>
-                <Text className="text-[14px]" style={{ color: theme.muted }}>
-                  Humidity {weather.humidity}%
-                </Text>
-              </View>
-            </View>
-          </Card>
-        )}
-
-        {bounties.length > 0 && (
-          <Card
-            className="mt-4 p-4"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center gap-2">
-                <View
-                  className="w-8 h-8 rounded-full items-center justify-center"
-                  style={{ backgroundColor: `${iconColors.amber}22` }}
-                >
-                  <Award size={15} color={iconColors.amber} />
-                </View>
-                <Text
-                  className="text-sm font-semibold"
-                  style={{ color: theme.foreground }}
-                >
-                  Bounties
-                </Text>
-              </View>
-              <View
-                className="rounded-full px-2.5 py-1"
-                style={{ backgroundColor: `${iconColors.amber}22` }}
-              >
-                <Text
-                  className="text-xs font-semibold"
-                  style={{ color: iconColors.amber }}
-                >
-                  {bountyPoints} pts
-                </Text>
-              </View>
-            </View>
-
-            <View className="gap-2.5">
-              {bounties.map((bounty) => (
-                <View
-                  key={bounty.id}
-                  className="flex-row items-start gap-2.5 rounded-xl p-3"
-                  style={{
-                    backgroundColor: bounty.completed
-                      ? `${iconColors.green}18`
-                      : theme.background,
-                    borderWidth: 1,
-                    borderColor: bounty.completed
-                      ? iconColors.green
-                      : theme.border,
-                  }}
-                >
-                  <CheckCircle2
-                    size={18}
-                    color={bounty.completed ? iconColors.green : theme.muted}
-                    fill={bounty.completed ? iconColors.green : "transparent"}
-                  />
-                  <View className="flex-1">
-                    <Text
-                      className="text-sm font-medium"
-                      style={{
-                        color: theme.foreground,
-                        textDecorationLine: bounty.completed
-                          ? "line-through"
-                          : "none",
-                      }}
-                    >
-                      {bounty.title}
-                    </Text>
-                    <Text
-                      className="text-xs mt-0.5"
-                      style={{ color: theme.muted }}
-                    >
-                      {bounty.description}
-                    </Text>
-                  </View>
-                  <Text
-                    className="text-xs font-semibold"
-                    style={{ color: iconColors.amber }}
-                  >
-                    +{bounty.rewardPoints}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </Card>
-        )}
-
-        {/* Main recommendation */}
-        {loadingRec && !recommendation ? (
-          <Card
-            className="mt-4 p-4 items-center py-8"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <ActivityIndicator color={theme.primary} />
-          </Card>
-        ) : !recommendation ? (
-          <Card
-            className="mt-4 px-5 py-7 items-center"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <View
-              className="w-12 h-12 rounded-full items-center justify-center mb-3"
-              style={{ backgroundColor: theme.primaryLight }}
-            >
-              <Sparkles size={22} color={theme.primary} />
-            </View>
-            {needsAssessment ? (
-              <>
-                <Text
-                  className="text-base font-semibold text-center"
-                  style={{ color: theme.foreground }}
-                >
-                  Let&apos;s set up your skin profile
-                </Text>
-                <Text
-                  className="text-[13px] text-center mt-1.5 leading-5"
-                  style={{ color: theme.muted }}
-                >
-                  A few quick questions and Lumora will build your daily brief
-                  and product picks around your skin.
-                </Text>
-                <Pressable
-                  onPress={() => router.push("/(onboarding)/skin-type")}
-                  accessibilityRole="button"
-                  className="mt-5 rounded-full px-6 py-3"
-                  style={{ backgroundColor: theme.primary }}
-                >
-                  <Text className="text-sm font-semibold text-white">
-                    Start assessment
-                  </Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text
-                  className="text-base font-semibold text-center"
-                  style={{ color: theme.foreground }}
-                >
-                  Couldn&apos;t load today&apos;s brief
-                </Text>
-                <Text
-                  className="text-[13px] text-center mt-1.5 leading-5"
-                  style={{ color: theme.muted }}
-                >
-                  {recError ?? "Check your connection and try again."}
-                </Text>
-                <Pressable
-                  onPress={loadAll}
-                  accessibilityRole="button"
-                  className="mt-5 flex-row items-center gap-2 rounded-full px-6 py-3"
-                  style={{ backgroundColor: theme.primary }}
-                >
-                  <RefreshCw size={14} color="#fff" />
-                  <Text className="text-sm font-semibold text-white">
-                    Try again
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </Card>
-        ) : (
-          <Card
-            className="mt-4 p-4"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
-            <DailyBrief brief={recommendation} />
-
-            {!recommendation.id ? null : feedbackGiven ? (
-              <View
-                className="mt-4 rounded-lg py-2.5 items-center"
-                style={{ backgroundColor: theme.primaryLight }}
-              >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: theme.primary }}
-                >
-                  {feedbackGiven === "helpful"
-                    ? "Glad it helped! ✓"
-                    : "Thanks — we'll adjust future picks."}
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-row gap-2 mt-4">
-                <Pressable
-                  onPress={() => handleFeedback(true)}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg py-2.5"
-                  style={{ backgroundColor: theme.primaryLight }}
-                >
-                  <ThumbsUp size={14} color={theme.primary} />
-                  <Text
-                    className="text-xs font-medium"
-                    style={{ color: theme.primary }}
-                  >
-                    Helpful
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleFeedback(false)}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg py-2.5"
-                  style={{ borderWidth: 1, borderColor: theme.border }}
-                >
-                  <ThumbsDown size={14} color={theme.muted} />
-                  <Text
-                    className="text-xs font-medium"
-                    style={{ color: theme.muted }}
-                  >
-                    Not for me
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </Card>
-        )}
-
-        {forYou && forYou.areas.length > 0 && (
-          <ForYouSuggestions data={forYou} />
-        )}
-      </View>
-    </ScrollView>
+        <BountiesCard theme={theme} bounties={bounties} points={bountyPoints} />
+      </ScrollView>
+    </View>
   );
 }

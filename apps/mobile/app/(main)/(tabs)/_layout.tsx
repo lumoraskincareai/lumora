@@ -1,7 +1,7 @@
 import { Tabs, useRouter } from "expo-router";
 import {
   Compass,
-  Sparkles,
+  House,
   User,
   Users,
   Plus,
@@ -115,6 +115,34 @@ function QuickActionSheet({ visible, onClose, theme }: any) {
   );
 }
 
+// A tab icon with a soft pill behind it when its tab is active.
+function TabIcon({
+  Icon,
+  color,
+  focused,
+  tint,
+}: {
+  Icon: React.ComponentType<{ color?: string; size?: number; strokeWidth?: number }>;
+  color: string;
+  focused: boolean;
+  tint: string;
+}) {
+  return (
+    <View
+      style={{
+        width: 52,
+        height: 30,
+        borderRadius: 15,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: focused ? tint : "transparent",
+      }}
+    >
+      <Icon color={color} size={22} strokeWidth={focused ? 2.3 : 1.9} />
+    </View>
+  );
+}
+
 export default function TabsLayout() {
   const { theme } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -130,26 +158,28 @@ export default function TabsLayout() {
           tabBarStyle: {
             borderTopColor: theme.border,
             backgroundColor: theme.card,
-            height: 48 + insets.bottom,
-            paddingBottom: insets.bottom + 4,
-            paddingTop: 4,
+            height: 66 + insets.bottom,
+            paddingBottom: insets.bottom + 6,
+            paddingTop: 8,
           },
           tabBarLabelStyle: {
             fontSize: 11,
-            fontWeight: "600",
-            marginTop: 1,
+            fontWeight: "700",
+            marginTop: 2,
           },
           tabBarIconStyle: {
-            width: 18,
-            height: 18,
+            width: 52,
+            height: 30,
           },
         }}
       >
         <Tabs.Screen
           name="home"
           options={{
-            title: "Brief",
-            tabBarIcon: ({ color }) => <Sparkles color={color} size={18} />,
+            title: "Home",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={House} color={color} focused={focused} tint={theme.primaryLight} />
+            ),
           }}
         />
 
@@ -157,7 +187,9 @@ export default function TabsLayout() {
           name="explore"
           options={{
             title: "Explore",
-            tabBarIcon: ({ color }) => <Compass color={color} size={18} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Compass} color={color} focused={focused} tint={theme.primaryLight} />
+            ),
           }}
         />
 
@@ -166,26 +198,38 @@ export default function TabsLayout() {
           options={{
             title: "",
             tabBarIcon: () => (
-              <LinearGradient
-                colors={theme.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  marginBottom: 16,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  marginBottom: 26,
                   alignItems: "center",
                   justifyContent: "center",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.2,
-                  shadowRadius: 6,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 5,
+                  // A ring in the bar colour makes the button look cut out of the bar.
+                  backgroundColor: theme.card,
+                  shadowColor: theme.primary,
+                  shadowOpacity: 0.35,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 8,
                 }}
               >
-                <Plus size={18} color="#fff" />
-              </LinearGradient>
+                <LinearGradient
+                  colors={theme.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Plus size={26} color="#fff" strokeWidth={2.4} />
+                </LinearGradient>
+              </View>
             ),
             tabBarButton: (props) => (
               <Pressable
@@ -203,14 +247,18 @@ export default function TabsLayout() {
           name="community"
           options={{
             title: "Community",
-            tabBarIcon: ({ color }) => <Users color={color} size={18} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Users} color={color} focused={focused} tint={theme.primaryLight} />
+            ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color }) => <User color={color} size={18} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={User} color={color} focused={focused} tint={theme.primaryLight} />
+            ),
           }}
         />
 
