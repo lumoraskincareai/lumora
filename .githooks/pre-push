@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs npm run verify before any push, and warns about contract and migration risk.
+node "$(git rev-parse --show-toplevel)/scripts/pre-push.cjs"

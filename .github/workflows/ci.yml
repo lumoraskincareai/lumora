@@ -1,0 +1,125 @@
+name: CI
+
+# The real gate. Local hooks can be skipped with --no-verify, this cannot.
+# Make these jobs required in GitHub: Settings -> Branches -> main -> Require status checks.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (typecheck, tests, lint, gates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+        working-directory: apps/api
+      - run: npm run verify
+
+  commits:
+    name: conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check every commit message in the PR
+        run: |
+          set -e
+          for sha in $(git rev-list --no-merges origin/${{ github.base_ref }}..HEAD); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/msg"
+            node scripts/commit-msg.cjs "$RUNNER_TEMP/msg" || { echo "bad message in $sha"; exit 1; }
+          done
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prisma:
+    name: prisma schema and migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: lumora_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # gate:allow  throwaway Postgres service that exists only inside this CI job
+      DATABASE_URL: postgresql://postgres:ci_only_password@localhost:5432/lumora_ci # gate:allow
+      DIRECT_URL: postgresql://postgres:ci_only_password@localhost:5432/lumora_ci # gate:allow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma validate
+        working-directory: apps/api
+      # Applies every migration to an empty database. This is a throwaway CI database, never Neon.
+      - run: npx prisma migrate deploy
+        working-directory: apps/api
+      # Fails if schema.prisma has changes that no migration covers.
+      - run: npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --exit-code --shadow-database-url "$DATABASE_URL"
+        working-directory: apps/api
+
+  mobile-bundle:
+    name: expo export (android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx expo export --platform android
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://api.example.invalid
+
+  api-docker:
+    name: api docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/api/Dockerfile -t lumora-api-ci .
+
+  audit:
+    name: npm audit (high and above)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm audit --audit-level=high --omit=dev

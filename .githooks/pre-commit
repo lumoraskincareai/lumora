@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks secrets, key files, console.log and local URLs in staged changes. See scripts/lib/gates.cjs.
+node "$(git rev-parse --show-toplevel)/scripts/pre-commit.cjs"

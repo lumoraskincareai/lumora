@@ -71,6 +71,8 @@ Open Claude Code at the repo root, because that's where it loads this configurat
 | `CLAUDE.md` (each level) | Just `@AGENTS.md`, so Claude Code loads the same instructions |
 | `.claude/settings.json` | Permissions, hooks and the official Expo plugin |
 | `.claude/hooks/guard.cjs` | Refuses destructive database commands and shell reads of `.env`; asks before migrations, seeds, EAS builds and pushes to main. A refusal is deliberate, so don't work around it; tell the user what you were trying to do |
+| `.githooks/` + `scripts/` | Git gates for everyone, installed by `npm install` (`core.hooksPath`). `pre-commit` blocks `.env`, keys, keystores, secrets, `console.log` and local URLs in mobile code (a deliberate exception takes `gate:allow` plus a reason). `commit-msg` requires `type(scope): summary`. `pre-push` runs `npm run verify` and warns about contract, migration and flag drift. Logic and tests: `scripts/lib/gates.cjs`, `npm run test:gates`. Don't use `--no-verify`; CI runs the same checks |
+| `.github/` | `workflows/ci.yml` (verify, commit messages, gitleaks, prisma migrations on a throwaway Postgres, expo export, Docker build, audit), Dependabot, PR template |
 | `.claude/agents/` | `app-reviewer`, `backend-reviewer`, `api-contract-checker` |
 | `.claude/skills/` | `/verify`, plus wrappers for the Prisma skills pinned in `apps/api/.agents/skills/` |
 

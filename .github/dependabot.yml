@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Expo SDK and React are pinned together on purpose. Upgrade them by hand with `npx expo install`.
+    ignore:
+      - dependency-name: expo
+      - dependency-name: react
+      - dependency-name: react-native
+      - dependency-name: typescript
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
