@@ -86,6 +86,7 @@ Last updated: 2026-11-04. Covers `apps/mobile/`, `apps/api/` and `apps/website/`
 - [ ] **Home redesign**: designed in the design artifact (six boards: morning, scrolled, evening, mood check-in, first day, Midnight theme). Not built yet; it needs a daily reset for routine step check-offs (`completedToday` is never reset) and the tab renamed from "Brief" to "Home"
 - [ ] **Onboarding follow-ups**: a "complete your profile" card on Home, clearing skin tone and age once set, and the stored `climateZone` as a brief fallback
 - [ ] **Run the new migration**: `20261105000000_expand_skin_profile` is committed but must be applied (`prisma migrate deploy`) to each database before the API that uses it is deployed
+- [x] **Account deletion** (2026-11-20): Settings → Delete account, `DELETE /users/me`. Still to do: run it once against a throwaway database (the order of deletes is unit-tested only), and add a deletion line to the privacy policy
 - [ ] **Rate limiting**: login and password-reset codes have no request limit yet (verification codes do: 5 tries)
 - [ ] **Token revocation**: refresh tokens are stateless, so logout can't invalidate one server-side
 - [ ] **Store launch**: the package name is still the placeholder `com.anonymous.lumoraapp`, the Play App Signing SHA-1 isn't registered for Google sign-in, and the website's `site.js` still has the placeholder Play Store URL (support email is set: hello@getlumora.site)

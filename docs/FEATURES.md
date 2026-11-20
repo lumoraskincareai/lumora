@@ -65,7 +65,7 @@ Lumora is a skincare companion for people who are tired of generic advice. It le
 - **Safety rule:** pregnancy, breastfeeding, trying to conceive, isotretinoin and a prescription retinoid all mean "steer away from retinoids". That one derived restriction is the only part ever sent to Gemini, never the answer behind it.
 
 ### Edit profile and public profile ✅
-- `(main)/edit-profile`, `(main)/user/[id]`; `/users/me`, `/users/:id/public`. Other users only ever see an id and a name.
+- `(main)/edit-profile`, `(main)/user/[id]`; `/users/me`, `/users/:id/public`. Other users only ever see an id and a name. **Delete account** (Settings): `DELETE /users/me` removes the profile and everything it owns in one transaction (`apps/api/src/lib/deleteAccount.ts`), then deletes uploaded photos from storage. Email accounts confirm with their password, Google accounts by typing DELETE. A wrong password returns 403, not 401, because the app logs people out on 401. Other people's replies to a deleted comment stay but lose their parent. Unit-tested with a fake transaction; not yet run against a real database.
 
 ---
 

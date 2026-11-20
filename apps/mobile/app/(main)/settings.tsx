@@ -5,6 +5,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "../../components/ui/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../components/ui/Card";
+import { DeleteAccountCard } from "../../components/DeleteAccountCard";
 import { useTheme } from "../../src/theme/ThemeContext";
 import { palettes } from "../../src/theme/palettes";
 import { LinearGradient } from "expo-linear-gradient";
@@ -104,6 +105,7 @@ export default function SettingsScreen() {
         </Text>
       </Card>
 
+      <DeleteAccountCard />
     </View>
   );
 }

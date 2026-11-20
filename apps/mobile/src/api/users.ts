@@ -6,6 +6,8 @@ export interface UserProfile {
   email: string;
   isPremium: boolean;
   isAdmin?: boolean;
+  /** False for Google-only accounts. Missing on older servers, so treat missing as true. */
+  hasPassword?: boolean;
 }
 
 export interface PublicProfile {
@@ -28,6 +30,14 @@ export function updateMyProfile(name: string) {
   return apiFetch<UserProfile>("/users/me", {
     method: "PATCH",
     body: JSON.stringify({ name }),
+  });
+}
+
+/** Permanently deletes the account. Email accounts send `password`, Google accounts send `confirm: "DELETE"`. */
+export function deleteMyAccount(input: { password?: string; confirm?: string }) {
+  return apiFetch<{ success: boolean }>("/users/me", {
+    method: "DELETE",
+    body: JSON.stringify(input),
   });
 }
 
